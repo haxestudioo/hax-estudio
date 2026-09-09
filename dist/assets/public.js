@@ -1,4 +1,6 @@
 import { seed } from './seed.js';
+import { createCinema } from './cinema.js';
+import { animatedTitle, watchMotion, enhanceCard, startPortraitMotion } from './motion.js';
 import {
   esc,
   safeUrl,
@@ -14,17 +16,19 @@ let content = structuredClone(seed),
   currentMonth = new Date(isoToday() + 'T12:00:00'),
   chosenDate = '',
   calendarData = {},
-  calendarSequence = 0;
+  calendarSequence = 0,
+  calendarSubmitting = false;
 const $ = (id) => document.getElementById(id),
   reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 function setText(id, value) {
   if ($(id)) $(id).textContent = value || '';
 }
 function titleLines(id, value) {
-  if (!$(id)) return;
-  const [first, ...rest] = String(value || '').split('\n');
-  $(id).innerHTML = esc(first) + (rest.length ? '<br><em>' + esc(rest.join(' ')) + '</em>' : '');
+  if ($(id)) $(id).innerHTML = animatedTitle(value);
 }
+let cinema = null,
+  cinemaKey = '';
+
 let leadSource = {};
 try {
   const saved = JSON.parse(sessionStorage.getItem('hax_campaign') || '{}');
@@ -67,16 +71,8 @@ function fillSite() {
   setText('region', s.region);
   if ($('region')) $('region').hidden = !s.region;
   document
-    .querySelectorAll('.brand strong')
-    .forEach((el) => (el.textContent = (s.brand || 'Hax Estúdio').split(' ')[0].toUpperCase()));
-  document
-    .querySelectorAll('.brand small')
-    .forEach(
-      (el) =>
-        (el.textContent =
-          ((s.brand || 'Hax Estúdio').split(' ').slice(1).join(' ') || 'FILMES').toUpperCase() +
-          ' · CASAMENTOS'),
-    );
+    .querySelectorAll('.brand')
+    .forEach((el) => el.setAttribute('aria-label', (s.brand || 'Hax Estúdio') + ', início'));
   setText('site-signature', s.signature);
   setText('hero-label', (s.brand || 'Hax Estúdio').toUpperCase() + ' / FILMES DE CASAMENTO');
   setText('chat-brand', s.brand);
@@ -118,10 +114,11 @@ function fillSite() {
   setText('copyright', new Date().getFullYear() + ' · ' + (s.brand || 'Hax Estúdio'));
   renderFilms();
   renderExtras();
-  renderHero();
+  renderCinema();
+  watchMotion();
 }
 function card(p) {
-  return `<a class="film-card reveal" href="/filmes/${esc(p.slug)}" data-project="${esc(p.id)}"><div class="film-image"><img src="${esc(safeUrl(p.cover_url) || seed.projects[0].cover_url)}" alt="${esc(p.title)}" loading="lazy" width="1280" height="720">${safeUrl(p.preview_url) && videoSpec(p.preview_url)?.type === 'file' ? `<video muted loop playsinline preload="none" data-preview="${esc(safeUrl(p.preview_url))}"></video>` : ''}<span class="play-mark" aria-hidden="true">▶</span></div><div class="film-info"><div><h3>${esc(p.title)}</h3><span class="film-meta">${esc(p.category)}${p.location ? ' / ' + esc(p.location) : ''}</span></div><span aria-hidden="true">↗</span></div></a>`;
+  return `<a class="film-card reveal" href="/filmes/${esc(p.slug)}" data-project="${esc(p.id)}" aria-haspopup="dialog" aria-label="Assistir a ${esc(p.title)}"><div class="film-image"><img src="${esc(safeUrl(p.cover_url) || seed.projects[0].cover_url)}" alt="${esc(p.title)}" loading="lazy" width="1280" height="720"><span class="film-watch" aria-hidden="true">Assistir <span>↗</span></span></div><div class="film-info"><div><h3>${esc(p.title)}</h3><span class="film-meta">${esc(p.category)}${p.location ? ' / ' + esc(p.location) : ''}</span></div></div></a>`;
 }
 function renderFilms(filter = 'Todos') {
   if (!$('film-grid')) return;
@@ -131,30 +128,17 @@ function renderFilms(filter = 'Todos') {
   $('film-grid').innerHTML = projects.length
     ? projects.map(card).join('')
     : '<p class="empty-public">Novas histórias em breve. Converse com a Hax para conhecer nossos filmes.</p>';
-  watchMotion();
   document.querySelectorAll('.film-card').forEach((a) => {
-    a.addEventListener('pointerenter', () => {
-      if (reduced || !matchMedia('(pointer:fine)').matches) return;
-      const v = a.querySelector('video');
-      if (v) {
-        v.src = v.dataset.preview;
-        v.play()
-          .then(() => v.classList.add('is-playing'))
-          .catch(() => {});
-      }
-      document.body.classList.add('cursor-on');
-    });
-    a.addEventListener('pointerleave', () => {
-      document.body.classList.remove('cursor-on');
-      a.querySelector('video')?.pause();
-    });
-    a.addEventListener('click', (e) => {
-      if (document.startViewTransition && !reduced && !e.metaKey && !e.ctrlKey) {
-        a.querySelector('img').style.viewTransitionName = 'film-cover';
-      }
+    enhanceCard(a);
+    a.addEventListener('click', (event) => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button) return;
+      event.preventDefault();
+      openFilm(projects.find((p) => p.id === a.dataset.project));
     });
   });
+  watchMotion();
 }
+
 function renderExtras() {
   const testimonials = content.testimonials.filter((x) => x.published);
   if ($('testimonials-section')) {
@@ -189,71 +173,19 @@ function renderExtras() {
       .join('');
   }
 }
-let heroInitialized = '',
-  heroObserver = null;
-function renderHero() {
-  if (!$('hero-video')) return;
-  const key = content.settings.site.hero_video || '';
-  if (heroInitialized === key) return;
-  heroInitialized = key;
-  heroObserver?.disconnect();
-  document.querySelector('.hero-embed')?.remove();
-  const video = $('hero-video'),
-    button = $('pause-hero');
-  video.pause();
-  video.hidden = true;
-  button.hidden = true;
-  const spec = videoSpec(key);
-  if (!spec || reduced || matchMedia('(max-width:650px)').matches) return;
-  let userPaused = false,
-    visible = true,
-    frame = null;
-  const frameSource =
-    spec.type === 'youtube'
-      ? spec.src + `&autoplay=1&mute=1&controls=0&loop=1&playlist=${spec.id}`
-      : '';
-  if (spec.type === 'file') {
-    video.src = spec.src;
-    video.hidden = false;
-  } else if (spec.type === 'youtube') {
-    frame = document.createElement('iframe');
-    frame.title = 'Prévia silenciosa do filme';
-    frame.tabIndex = -1;
-    frame.setAttribute('aria-hidden', 'true');
-    frame.allow = 'autoplay';
-    frame.referrerPolicy = 'strict-origin-when-cross-origin';
-    frame.className = 'hero-embed';
-    video.after(frame);
-  } else return;
-  const update = () => {
-    const playing = visible && !userPaused;
-    button.textContent = userPaused ? 'Reproduzir fundo' : 'Pausar fundo';
-    if (frame) {
-      frame.hidden = !playing;
-      const next = playing ? frameSource : 'about:blank';
-      if (frame.getAttribute('src') !== next) frame.src = next;
-    } else if (playing) {
-      video.play().catch(() => {
-        video.hidden = true;
-        button.hidden = true;
-      });
-    } else video.pause();
-  };
-  button.hidden = false;
-  button.onclick = () => {
-    userPaused = !userPaused;
-    update();
-  };
-  heroObserver = new IntersectionObserver(
-    (entries) => {
-      visible = entries[0].isIntersecting;
-      update();
-    },
-    { threshold: 0.05 },
-  );
-  heroObserver.observe(document.querySelector('.hero'));
-  update();
+function renderCinema() {
+  if (!$('cinema-sequence')) return;
+  const s = content.settings.site;
+  const first = s.hero_video || seed.settings.site.hero_video;
+  const second = s.second_video || seed.settings.site.second_video;
+  $('second-cover').src = safeUrl(s.second_cover) || seed.settings.site.second_cover;
+  const key = JSON.stringify([first, second]);
+  if (cinemaKey === key) return;
+  cinemaKey = key;
+  cinema?.dispose();
+  cinema = createCinema({ first, second, onWatch: (url) => openFilm({ video_url: url }) });
 }
+
 function embed(spec, autoplay = true) {
   if (!spec) return '<p>O filme não está disponível no momento.</p>';
   return spec.type === 'file'
@@ -263,24 +195,11 @@ function embed(spec, autoplay = true) {
 function openFilm(p) {
   const spec = videoSpec(p?.video_url);
   if (!spec) return;
+  cinema?.suspend();
   $('video-container').innerHTML = embed(spec);
   $('video-dialog').showModal();
 }
-function watchMotion() {
-  if (reduced || !('IntersectionObserver' in window)) return;
-  document.documentElement.classList.add('js-motion');
-  const observer = new IntersectionObserver(
-    (entries) =>
-      entries.forEach((e) => {
-        if (e.isIntersecting) {
-          e.target.classList.add('visible');
-          observer.unobserve(e.target);
-        }
-      }),
-    { threshold: 0.05 },
-  );
-  document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
-}
+
 async function calendar() {
   if (!$('calendar-days')) return;
   const seq = ++calendarSequence;
@@ -290,6 +209,8 @@ async function calendar() {
     currentMonth.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
   );
   calendarData = {};
+  chosenDate = '';
+  renderCalendarSelection();
   renderDays();
   setText('calendar-status', 'Consultando a disponibilidade…');
   if (content.settings.calendar?.enabled === false) {
@@ -314,6 +235,7 @@ async function calendar() {
     );
   }
   renderDays();
+  renderCalendarSelection();
 }
 function renderDays() {
   if (!$('calendar-days')) return;
@@ -332,7 +254,7 @@ function renderDays() {
       busy: 'Indisponível',
       unknown: 'Disponibilidade a consultar',
     }[status];
-    html += `<button type="button" data-date="${date}" class="${status} ${date === chosenDate ? 'selected' : ''}" aria-label="${dateLabel(date)}, ${label}" ${['past', 'busy'].includes(status) ? 'disabled' : ''}>${d}</button>`;
+    html += `<button type="button" data-date="${date}" class="${status} ${date === chosenDate ? 'selected' : ''}" aria-label="${dateLabel(date)}, ${label}" aria-pressed="${date === chosenDate}" ${status === 'past' || calendarSubmitting ? 'disabled' : ''}>${d}</button>`;
   }
   $('calendar-days').innerHTML = html;
   $('calendar-days')
@@ -341,52 +263,122 @@ function renderDays() {
       (b) =>
         (b.onclick = () => {
           chosenDate = b.dataset.date;
-          if ($('lead-date')) $('lead-date').value = chosenDate;
-          setText(
-            'selected-date',
-            dateLabel(chosenDate) + ' selecionado. Envie seus dados abaixo para conversar.',
-          );
+          renderCalendarSelection();
           renderDays();
         }),
     );
   const now = new Date(isoToday() + 'T12:00:00');
-  $('prev-month').disabled = year * 12 + month <= now.getFullYear() * 12 + now.getMonth();
+  $('prev-month').disabled =
+    calendarSubmitting || year * 12 + month <= now.getFullYear() * 12 + now.getMonth();
   $('next-month').disabled =
+    calendarSubmitting ||
     year * 12 + month >=
-    now.getFullYear() * 12 + now.getMonth() + (content.settings.calendar.months_ahead || 18);
+      now.getFullYear() * 12 + now.getMonth() + (content.settings.calendar.months_ahead || 18);
 }
-let leadRequestId = crypto.randomUUID();
+function renderCalendarSelection() {
+  const panel = $('calendar-response'),
+    form = $('calendar-lead-form'),
+    link = $('calendar-exception');
+  if (!panel || !form || !link) return;
+  panel.hidden = !chosenDate;
+  if (!chosenDate) {
+    setText('selected-date', 'Selecione o dia do seu casamento.');
+    return;
+  }
+  const status = calendarData[chosenDate] || 'unknown';
+  form.hidden = status !== 'available';
+  link.hidden = status === 'available';
+  form.elements.event_date.value = chosenDate;
+  setText('calendar-form-status', '');
+  setText('selected-date', dateLabel(chosenDate) + ' selecionado.');
+  setText('calendar-response-title', dateLabel(chosenDate));
+  if (status === 'available') {
+    setText(
+      'calendar-response-message',
+      'Sua data está disponível. Vamos conversar sobre o seu casamento?',
+    );
+  } else if (status === 'busy') {
+    setText('calendar-response-message', 'Data indisponível.');
+    link.innerHTML = 'Consultar exceções no WhatsApp <span aria-hidden="true">↗</span>';
+    link.href = whatsapp(
+      'Olá, Leanderson! Vi que a data ' +
+        dateLabel(chosenDate) +
+        ' está indisponível. Podemos conversar sobre alguma exceção para o meu casamento?',
+    );
+  } else {
+    setText('calendar-response-message', 'Precisamos confirmar a disponibilidade desta data.');
+    link.innerHTML = 'Consultar pelo WhatsApp <span aria-hidden="true">↗</span>';
+    link.href = whatsapp(
+      'Olá, Leanderson! Gostaria de consultar a disponibilidade para o dia ' +
+        dateLabel(chosenDate) +
+        '.',
+    );
+  }
+}
+const leadAttempts = new WeakMap();
 async function submitLead(event) {
   event.preventDefault();
   const form = event.currentTarget;
   if (!form.reportValidity()) return;
+  const isCalendar = form.id === 'calendar-lead-form';
+  const statusElement = $(isCalendar ? 'calendar-form-status' : 'form-status');
   const data = Object.fromEntries(new FormData(form));
   data.consent = data.consent === 'on';
   data.utm = leadSource;
-  data.request_key = leadRequestId;
-  const btn = form.querySelector('button[type=submit]');
-  btn.disabled = true;
-  setText('form-status', 'Enviando sua história…');
-  $('form-status').className = '';
+  if (isCalendar && calendarData[data.event_date] !== 'available') {
+    renderCalendarSelection();
+    return;
+  }
+  const fingerprint = JSON.stringify(data);
+  let attempt = leadAttempts.get(form);
+  if (!attempt || attempt.fingerprint !== fingerprint) {
+    attempt = { fingerprint, key: crypto.randomUUID() };
+    leadAttempts.set(form, attempt);
+  }
+  data.request_key = attempt.key;
+  const controls = [...form.elements];
+  controls.forEach((el) => (el.disabled = true));
+  if (isCalendar) calendarSubmitting = true;
+  if (isCalendar) renderDays();
+  statusElement.textContent = 'Enviando seus dados…';
+  statusElement.className = '';
   try {
     await request('leads', { method: 'POST', body: data });
-    setText(
-      'form-status',
-      'Recebemos sua história! Leanderson vai entrar em contato pelo WhatsApp informado.',
-    );
-    $('form-status').className = 'success';
     form.reset();
-    chosenDate = '';
-    renderDays();
-    window.dispatchEvent(new CustomEvent('hax:lead-submitted', { detail: { source: 'form' } }));
-    leadRequestId = crypto.randomUUID();
+    leadAttempts.delete(form);
+    if (isCalendar) {
+      form.hidden = true;
+      setText(
+        'calendar-response-message',
+        'Recebemos seus dados para ' +
+          dateLabel(data.event_date) +
+          '! Leanderson vai conversar com você pelo WhatsApp. A reserva é confirmada com a contratação.',
+      );
+    } else {
+      statusElement.textContent =
+        'Recebemos sua história! Leanderson vai entrar em contato pelo WhatsApp informado.';
+      statusElement.className = 'success';
+    }
+    window.dispatchEvent(
+      new CustomEvent('hax:lead-submitted', {
+        detail: { source: isCalendar ? 'calendar' : 'form' },
+      }),
+    );
   } catch (error) {
-    setText('form-status', error.message + ' Seus dados continuam aqui.');
-    $('form-status').className = 'error';
+    if (isCalendar && ['busy', 'unknown'].includes(error.details?.availability)) {
+      calendarData[data.event_date] = error.details.availability;
+      renderCalendarSelection();
+    } else {
+      statusElement.textContent = error.message + ' Seus dados continuam aqui.';
+      statusElement.className = 'error';
+    }
   } finally {
-    btn.disabled = false;
+    controls.forEach((el) => (el.disabled = false));
+    if (isCalendar) calendarSubmitting = false;
+    if (isCalendar) renderDays();
   }
 }
+
 const chatHistory = [];
 let chatSession = crypto.randomUUID();
 function chatMessage(role, text) {
@@ -478,6 +470,7 @@ document
   .forEach((b) => b.addEventListener('click', () => b.closest('dialog').close()));
 $('video-dialog')?.addEventListener('close', () => {
   $('video-container').innerHTML = '';
+  cinema?.resume();
 });
 $('video-dialog')?.addEventListener('click', (e) => {
   if (e.target === $('video-dialog')) $('video-dialog').close();
@@ -489,15 +482,8 @@ $('film-filters')?.addEventListener('click', (e) => {
     .forEach((b) => b.classList.toggle('active', b === e.target));
   renderFilms(e.target.dataset.filter);
 });
-$('hero-play')?.addEventListener('click', () =>
-  openFilm({
-    video_url:
-      content.settings.site.hero_video ||
-      content.projects.find((p) => p.published && p.featured)?.video_url ||
-      content.projects.find((p) => p.published)?.video_url,
-  }),
-);
 $('lead-form')?.addEventListener('submit', submitLead);
+$('calendar-lead-form')?.addEventListener('submit', submitLead);
 if ($('lead-date')) $('lead-date').min = isoToday();
 $('prev-month')?.addEventListener('click', () => {
   currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
@@ -509,38 +495,22 @@ $('next-month')?.addEventListener('click', () => {
 });
 $('contact-widget')?.addEventListener('click', startChat);
 $('chat-form')?.addEventListener('submit', sendChat);
-document.addEventListener('pointermove', (e) => {
-  const cursor = $('film-cursor');
-  if (cursor && !reduced) {
-    cursor.style.left = e.clientX + 'px';
-    cursor.style.top = e.clientY + 'px';
-  }
-});
-if (!reduced && matchMedia('(min-width:900px)').matches && document.querySelector('.hero')) {
-  let scheduled = false;
-  const draw = () => {
-    const progress = Math.min(1, Math.max(0, scrollY / (innerHeight * 0.8)));
-    document.querySelector('.hero').style.setProperty('--hero-progress', progress);
-    scheduled = false;
-  };
-  addEventListener(
-    'scroll',
-    () => {
-      if (!scheduled) {
-        scheduled = true;
-        requestAnimationFrame(draw);
-      }
-    },
-    { passive: true },
-  );
-  draw();
-}
 fillSite();
 renderDetail();
+startPortraitMotion();
 try {
   const remote = await request('public-config');
   if (remote.settings) {
-    content = { ...content, ...remote, settings: { ...content.settings, ...remote.settings } };
+    content = {
+      ...content,
+      ...remote,
+      settings: Object.fromEntries(
+        Object.entries(content.settings).map(([key, value]) => [
+          key,
+          { ...value, ...(remote.settings[key] || {}) },
+        ]),
+      ),
+    };
     connected = remote.connected === true;
     fillSite();
     renderDetail();

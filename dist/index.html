@@ -9,7 +9,7 @@
       name="description"
       content="Filmes de casamento e pré-wedding por Leanderson, Hax Estúdio. Conheça nossas histórias e consulte sua data."
     />
-    <link rel="icon" href="/assets/favicon.svg" />
+    <link rel="icon" href="/assets/favicon.svg?v=2" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -17,14 +17,21 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/assets/site.css" />
+    <link rel="stylesheet" href="/assets/experience.css" />
     <script type="module" src="/assets/public.js"></script>
   </head>
   <body>
     <a class="skip" href="#filmes">Ir para os filmes</a>
     <header class="site-header">
       <a class="brand" href="/" aria-label="Hax Estúdio, início"
-        ><strong>HAX</strong><small>ESTÚDIO · CASAMENTOS</small></a
-      ><button class="menu-toggle" aria-controls="navigation" aria-expanded="false">
+        ><img
+          class="brand-image"
+          src="/assets/hax-logo.svg"
+          width="701"
+          height="274"
+          alt="Hax Estúdio de Criação"
+      /></a>
+      <button class="menu-toggle" aria-controls="navigation" aria-expanded="false">
         Menu <span>☰</span>
       </button>
       <nav id="navigation" aria-label="Principal">
@@ -34,30 +41,74 @@
       </nav>
     </header>
     <main>
-      <section class="hero" aria-labelledby="hero-title">
-        <div class="hero-media">
-          <img
-            id="hero-cover"
-            src="/assets/covers/T0VN2ykadeg.jpg"
-            fetchpriority="high"
-            alt="Uma cena do filme de casamento de Dani e Jonas"
-          /><video id="hero-video" muted loop playsinline preload="none" hidden></video>
-        </div>
-        <div class="hero-shade"></div>
-        <div class="hero-copy">
-          <p class="eyebrow" id="hero-label">HAX ESTÚDIO / FILMES DE CASAMENTO</p>
-          <h1 id="hero-title">O dia passa.<br /><em>O que sentimos fica.</em></h1>
-          <p id="hero-intro">
-            Filmes de casamento para reviver o que faz a sua história ser única.
-          </p>
-          <a class="button primary" href="#contato">Consultar minha data <span>↗</span></a>
-        </div>
-        <div class="hero-bottom">
-          <a class="scroll-cue" href="#filmes">EXPLORE AS HISTÓRIAS <span>↓</span></a
-          ><button id="hero-play" class="reel-button">
-            <span class="round-play">▶</span
-            ><span>UM FILME HAX<small>Assistir à história</small></span></button
-          ><button id="pause-hero" class="text-button" hidden>Pausar fundo</button>
+      <section id="cinema-sequence" class="cinema-sequence" aria-label="Filmes em destaque">
+        <div class="cinema-stage">
+          <section
+            class="cinema-scene cinema-first hero"
+            data-cinema-scene="0"
+            aria-labelledby="hero-title"
+          >
+            <div class="cinema-media" id="cinema-media-first">
+              <img
+                id="hero-cover"
+                class="cinema-poster"
+                src="/assets/covers/AciOu04BxZg.jpg"
+                alt="Cena de Casamento Vini"
+                width="1280"
+                height="720"
+                fetchpriority="high"
+              />
+              <div class="cinema-player" id="cinema-player-first" aria-hidden="true"></div>
+            </div>
+            <div class="hero-shade"></div>
+            <div class="hero-copy">
+              <p class="eyebrow" id="hero-label">HAX ESTÚDIO / FILMES DE CASAMENTO</p>
+              <h1 id="hero-title">O dia passa.<br /><em>O que sentimos fica.</em></h1>
+              <p id="hero-intro">
+                Filmes de casamento para reviver o que faz a sua história ser única.
+              </p>
+              <a class="button primary" href="#agenda"
+                >Consultar minha data <span aria-hidden="true">↗</span></a
+              >
+            </div>
+            <a class="cinema-scroll-cue" href="#filmes"
+              >Explore as histórias <span aria-hidden="true">↓</span></a
+            >
+          </section>
+          <section
+            class="cinema-scene cinema-second"
+            data-cinema-scene="1"
+            aria-label="Segundo filme em destaque"
+            inert
+          >
+            <div class="cinema-media" id="cinema-media-second">
+              <img
+                id="second-cover"
+                class="cinema-poster"
+                src="/assets/covers/T0VN2ykadeg.jpg"
+                alt="Cena de Dani e Jonas"
+                width="1280"
+                height="720"
+              />
+              <div class="cinema-player" id="cinema-player-second" aria-hidden="true"></div>
+            </div>
+            <div class="cinema-shade"></div>
+          </section>
+          <div class="cinema-controls" aria-label="Controles do filme em destaque">
+            <button id="cinema-watch" class="cinema-control cinema-watch" type="button">
+              <span aria-hidden="true">▷</span> Assistir com som
+            </button>
+            <button
+              id="cinema-toggle"
+              class="cinema-control cinema-toggle"
+              type="button"
+              aria-label="Pausar prévia"
+              title="Pausar prévia"
+            >
+              <span class="cinema-toggle-icon" aria-hidden="true">Ⅱ</span>
+            </button>
+          </div>
+          <div class="cinema-progress" aria-hidden="true"><span></span></div>
         </div>
       </section>
       <section id="filmes" class="section films-section">
@@ -155,7 +206,7 @@
           <p id="calendar-status" class="muted" role="status">Carregando disponibilidade…</p>
           <a class="text-link" href="#contato">Conversar sobre meu casamento <span>↗</span></a>
         </div>
-        <div class="calendar-card">
+        <div class="calendar-card reveal">
           <div class="calendar-toolbar">
             <button id="prev-month" class="icon-button" aria-label="Mês anterior">←</button>
             <h3 id="month-label"></h3>
@@ -178,6 +229,72 @@
           <p id="selected-date" class="calendar-selection" aria-live="polite">
             Selecione o dia do seu casamento.
           </p>
+          <div id="calendar-response" class="calendar-response" hidden>
+            <h4 id="calendar-response-title"></h4>
+            <p id="calendar-response-message" role="status"></p>
+            <form id="calendar-lead-form" class="calendar-lead-form" hidden>
+              <input name="event_date" type="hidden" />
+              <input name="intent" type="hidden" value="calendar" />
+              <div class="field">
+                <label for="calendar-phone">WhatsApp</label
+                ><input
+                  id="calendar-phone"
+                  name="phone"
+                  type="tel"
+                  inputmode="tel"
+                  autocomplete="tel"
+                  placeholder="(44) 99999-9999"
+                  minlength="10"
+                  maxlength="24"
+                  required
+                />
+              </div>
+              <div class="field">
+                <label for="calendar-name">Seu nome</label
+                ><input
+                  id="calendar-name"
+                  name="name"
+                  autocomplete="name"
+                  minlength="2"
+                  maxlength="120"
+                  required
+                />
+              </div>
+              <div class="field">
+                <label for="calendar-city">Cidade do casamento</label
+                ><input
+                  id="calendar-city"
+                  name="event_city"
+                  autocomplete="address-level2"
+                  minlength="2"
+                  maxlength="160"
+                  required
+                />
+              </div>
+              <div class="honeypot" aria-hidden="true">
+                <label>Website<input name="website" tabindex="-1" autocomplete="off" /></label>
+              </div>
+              <label class="check-label"
+                ><input type="checkbox" name="consent" required /><span
+                  >Autorizo o contato da Hax sobre esta solicitação e li a
+                  <a href="/privacidade.html">política de privacidade</a>.</span
+                ></label
+              >
+              <button class="button primary" type="submit">
+                Conversar sobre esta data <span aria-hidden="true">↗</span>
+              </button>
+              <p id="calendar-form-status" role="status" aria-live="polite"></p>
+            </form>
+            <a
+              id="calendar-exception"
+              class="button calendar-exception"
+              target="_blank"
+              rel="noopener noreferrer"
+              hidden
+              href="https://wa.me/5544991855451"
+              >Consultar exceções no WhatsApp <span aria-hidden="true">↗</span></a
+            >
+          </div>
         </div>
       </section>
       <section id="faq-section" class="section faq-section" hidden>
@@ -279,7 +396,14 @@
       </section>
     </main>
     <footer class="site-footer">
-      <a class="brand" href="/"><strong>HAX</strong><small>ESTÚDIO · CASAMENTOS</small></a>
+      <a class="brand" href="/"
+        ><img
+          class="brand-image"
+          src="/assets/hax-logo.svg"
+          width="701"
+          height="274"
+          alt="Hax Estúdio de Criação"
+      /></a>
       <p id="footer-text">Histórias que merecem ficar.</p>
       <div>
         <a id="instagram-link" hidden target="_blank" rel="noopener noreferrer">Instagram ↗</a
@@ -294,7 +418,7 @@
       rel="noopener noreferrer"
       ><span>◌</span> Vamos conversar</a
     >
-    <div id="film-cursor" aria-hidden="true">ASSISTIR ↗</div>
+
     <dialog id="video-dialog" class="video-dialog">
       <button class="dialog-close" aria-label="Fechar filme">✕</button>
       <div id="video-container"></div>

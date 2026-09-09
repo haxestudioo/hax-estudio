@@ -117,6 +117,30 @@ await test('editar um lead preserva a data da autorização já registrada', asy
   );
   assert.equal(await scalar('select consented_at::text from leads where id=$1', [leadId]), before);
 });
+await test('atualização 003 muda abertura e preserva leads, histórico e conteúdo personalizado', async () => {
+  const before = (await query('select * from leads where id=$1', [leadId])).rows[0];
+  const activities = await scalar('select count(*)::int from lead_activities');
+  await query(
+    'update site_settings set value=value || \'{"about":"Texto personalizado","hero_video":"https://www.youtube.com/watch?v=T0VN2ykadeg"}\'::jsonb where key=\'site\'',
+  );
+  await pg.exec(
+    await readFile(
+      new URL('../supabase/migrations/003_cinematic_update.sql', import.meta.url),
+      'utf8',
+    ),
+  );
+  const site = await scalar("select value from site_settings where key='site'");
+  assert.equal(site.hero_video, 'https://www.youtube.com/watch?v=AciOu04BxZg');
+  assert.equal(site.second_video, 'https://www.youtube.com/watch?v=T0VN2ykadeg');
+  assert.equal(site.about, 'Texto personalizado');
+  assert.deepEqual((await query('select * from leads where id=$1', [leadId])).rows[0], before);
+  assert.equal(await scalar('select count(*)::int from lead_activities'), activities);
+  assert.equal(await scalar('select count(*)::int from admin_users'), 1);
+  assert.equal(
+    await scalar('select slug from projects order by position limit 1'),
+    'casamento-vini',
+  );
+});
 await test('banco recusa remoção de etapa usada por um lead', async () => {
   await assert.rejects(
     query("delete from pipeline_stages where id='proposta'"),

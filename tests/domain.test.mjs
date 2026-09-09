@@ -83,6 +83,12 @@ test('atualizações respeitam a lista de campos e não apagam obrigatórios', (
 test('configurações impõem fontes, formatos e limites de custo', () => {
   bad(() => validateSettings('theme', { ...seed.settings.theme, heading_font: 'url(evil)' }));
   bad(() => validateSettings('site', { hero_video: 'https://example.com/page' }));
+  bad(() => validateSettings('site', { second_video: 'https://vimeo.com/123456' }));
+  bad(() => validateSettings('site', { second_cover: 'javascript:alert(1)' }));
+  assert.equal(
+    validateSettings('site', { second_video: seed.settings.site.second_video }).second_video,
+    seed.settings.site.second_video,
+  );
   bad(() => validateSettings('chatbot', { ...seed.settings.chatbot, input_usd: 0 }));
   bad(() => validateSettings('chatbot', { ...seed.settings.chatbot, budget_brl: -1 }));
   assert.equal(validateSettings('chatbot', seed.settings.chatbot).enabled, false);

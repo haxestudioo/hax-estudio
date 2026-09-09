@@ -107,6 +107,7 @@ export async function request(path, { method = 'GET', body, token, signal } = {}
   if (!response.ok) {
     const error = new Error(data.error || 'Não foi possível concluir. Tente novamente.');
     error.status = response.status;
+    error.details = data;
     throw error;
   }
   return data;

@@ -2,14 +2,17 @@
 
 Este guia coloca o projeto do ZIP em suas próprias contas. A ordem é: Supabase → GitHub → Netlify → administrador → Google Agenda → chatbot. Google e OpenAI podem ser conectados depois; o portfólio, o CRM e o WhatsApp funcionam sem essas duas integrações quando o Supabase está conectado.
 
+Se seu banco já recebeu a versão anterior, siga [ATUALIZACAO-V2.md](ATUALIZACAO-V2.md). Não recrie o banco nem os usuários.
+
 ## 1. Preparar o Supabase
 
 1. Acesse [Supabase](https://supabase.com/dashboard) e crie um **projeto novo**, dedicado a este site. Guarde a senha do banco.
 2. Aguarde a criação do projeto e abra **SQL Editor → New query**.
 3. Abra o arquivo `supabase/migrations/001_initial.sql` no seu computador, copie todo o conteúdo e execute no SQL Editor.
 4. Em uma nova consulta, execute todo o conteúdo de `supabase/migrations/002_content.sql`.
+5. Execute `supabase/migrations/003_cinematic_update.sql` para aplicar a ordem da abertura e os campos do segundo filme.
 
-O primeiro arquivo cria tabelas, permissões, histórico, limitação de solicitações, controle do chatbot e o bucket público `portfolio` para capas. O segundo insere os textos, filmes, coleções em rascunho e etapas do funil.
+O primeiro arquivo cria tabelas, permissões, histórico, limitação de solicitações, controle do chatbot e o bucket público `portfolio` para capas. O segundo insere os textos, filmes, coleções em rascunho e etapas do funil. O terceiro define Casamento Vini e Dani & Jonas como os dois filmes de tela cheia, mantendo os demais dados.
 
 Execute o primeiro arquivo uma vez em um banco novo. Ele não é uma atualização para um sistema antigo já em operação. O arquivo de conteúdo usa `ON CONFLICT DO NOTHING`: repetir sua execução preserva os registros que já existem, em vez de atualizar o conteúdo salvo pelo painel.
 

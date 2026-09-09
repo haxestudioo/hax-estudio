@@ -384,12 +384,11 @@ const defs = {
       ['position', 'Ordem de exibição', 'number'],
       ['video_url', 'Link do vídeo (YouTube, Vimeo, MP4 ou WebM)', 'url', true],
       ['cover_url', 'Capa', 'image', true],
-      ['preview_url', 'Prévia silenciosa (link direto MP4/WebM)', 'url'],
       ['description', 'Sobre esta história', 'textarea'],
       ['location', 'Local', 'text'],
       ['year', 'Ano', 'text'],
       ['published', 'Publicar no site', 'checkbox'],
-      ['featured', 'Filme em destaque', 'checkbox'],
+      ['featured', 'Priorizar na galeria', 'checkbox'],
     ],
   },
   testimonials: {
@@ -717,13 +716,11 @@ function bindUploads() {
             'image/avif': 'avif',
           }[file.type];
           const path = 'uploads/' + crypto.randomUUID() + '.' + ext;
-          const { error } = await client.storage
-            .from('portfolio')
-            .upload(path, file, {
-              contentType: file.type,
-              cacheControl: '31536000',
-              upsert: false,
-            });
+          const { error } = await client.storage.from('portfolio').upload(path, file, {
+            contentType: file.type,
+            cacheControl: '31536000',
+            upsert: false,
+          });
           if (error)
             throw new Error(
               'Não foi possível enviar a imagem. Verifique as permissões do Storage.',
@@ -786,8 +783,10 @@ const siteFields = [
   ['signature', 'Assinatura', 'text'],
   ['headline', 'Título de abertura — use uma quebra de linha', 'textarea'],
   ['intro', 'Texto de abertura', 'textarea'],
-  ['hero_cover', 'Imagem de abertura', 'image'],
-  ['hero_video', 'Vídeo de abertura (MP4/WebM ou YouTube)', 'url'],
+  ['hero_cover', 'Capa do primeiro filme em tela cheia', 'image'],
+  ['hero_video', 'Primeiro filme em tela cheia (MP4/WebM ou YouTube)', 'url'],
+  ['second_cover', 'Capa do segundo filme em tela cheia', 'image'],
+  ['second_video', 'Segundo filme em tela cheia (MP4/WebM ou YouTube)', 'url'],
   ['about_title', 'Título da apresentação', 'textarea'],
   ['about_photo', 'Foto de apresentação', 'image'],
   ['about', 'Sua apresentação', 'textarea'],

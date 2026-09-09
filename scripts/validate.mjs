@@ -51,6 +51,7 @@ for (const path of [
   'dist/privacidade.html',
   'supabase/migrations/001_initial.sql',
   'supabase/migrations/002_content.sql',
+  'supabase/migrations/003_cinematic_update.sql',
   'netlify.toml',
 ]) {
   try {

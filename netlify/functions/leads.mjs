@@ -10,6 +10,7 @@ import {
   uuid,
   validDate,
 } from './lib/core.mjs';
+import { monthAvailability } from './lib/availability.mjs';
 export function validateLead(data) {
   const name = text(data.name, 120),
     phone = text(data.phone, 24).replace(/\D/g, ''),
@@ -41,7 +42,7 @@ export function validateLead(data) {
     notes: text(data.message, 2000),
     consent: true,
     consented_at: new Date().toISOString(),
-    origin: utm.utm_source ? 'campanha' : 'site',
+    origin: utm.utm_source ? 'campanha' : data.intent === 'calendar' ? 'agenda' : 'site',
     utm,
     request_key: data.request_key,
   };
@@ -52,6 +53,25 @@ export default endpoint(async (req, context) => {
   if (data.website) return json({ success: true });
   const lead = validateLead(data);
   await limit(context, 'leads', 5, 600);
+  if (data.intent === 'calendar') {
+    const existing = await db('leads?request_key=eq.' + lead.request_key + '&select=id&limit=1');
+    if (existing.length) return json({ success: true }, 201);
+    const availability = await monthAvailability(lead.event_date.slice(0, 7));
+    const status = availability.days[lead.event_date] || 'unknown';
+    if (status !== 'available')
+      return json(
+        {
+          error:
+            status === 'busy'
+              ? 'Esta data está indisponível. Consulte exceções pelo WhatsApp.'
+              : 'Não foi possível confirmar esta data. Consulte pelo WhatsApp.',
+          availability: status,
+        },
+        409,
+      );
+    lead.notes =
+      'Solicitação enviada pela agenda do site. Disponibilidade consultada; a contratação ainda precisa ser confirmada.';
+  }
   const stages = await db('pipeline_stages?kind=eq.open&order=position.asc&limit=1');
   if (!stages.length) throw new HttpError(503, 'Entre em contato com a Hax pelo WhatsApp.');
   await db('leads?on_conflict=request_key', {

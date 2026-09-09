@@ -1,24 +1,24 @@
 # Verificação da entrega
 
-Data: **8 de setembro de 2026**.
+Data: **9 de setembro de 2026** · versão 1.1.
 
 ## Resultado
 
-| Verificação | Resultado |
-| --- | --- |
-| Sintaxe JavaScript, imports e arquivos necessários | Aprovado com `npm run build` |
-| Regras de domínio e endpoints das funções | 26 testes aprovados |
-| Migrações, permissões e funções SQL | 12 testes aprovados em PostgreSQL via PGlite 0.5.8 |
+| Verificação                                        | Resultado                                                    |
+| -------------------------------------------------- | ------------------------------------------------------------ |
+| Sintaxe JavaScript, imports e arquivos necessários | Aprovado com `node scripts/validate.mjs`, o comando do build |
+| Regras de domínio e endpoints das funções          | 32 testes aprovados                                          |
+| Migrações, permissões e funções SQL                | 13 testes aprovados em PostgreSQL via PGlite 0.5.8           |
 
-Os 38 testes verificam entradas inválidas, autorização de administrador, proteção do CRM, origem das campanhas, reenvio idempotente de leads, conflito entre edições, autoria e preservação da data de consentimento, upload restrito, limites por IP, datas ocupadas e bloqueios de orçamento.
+Os 45 testes verificam entradas inválidas, autorização de administrador, proteção do CRM, origem das campanhas, reenvio idempotente de leads, conflito entre edições, autoria e preservação da data de consentimento, upload restrito, limites por IP, datas ocupadas e bloqueios de orçamento. A atualização acrescenta a captação pela agenda e a preservação dos dados na migração 003.
 
 ## O que foi exercitado
 
 **Funções e regras:** URLs perigosas, escape de HTML, proteção de CSV contra fórmulas, datas impossíveis, consentimento obrigatório, lista de campos permitidos, limites de configuração, acesso sem sessão, usuário sem papel administrativo, resposta pública sem dados do CRM, gravação de leads, controle de abuso, conflito entre versões, manutenção de etapa aberta, chatbot desligado, teto insuficiente, contabilização de tokens e timeout com encaminhamento ao WhatsApp.
 
-**Agenda:** fevereiro bissexto, virada do ano, fim exclusivo à meia-noite, evento que cruza dois dias, ausência de credenciais e preservação de bloqueios manuais sem apresentar datas desconhecidas como livres.
+**Agenda:** fevereiro bissexto, virada do ano, fim exclusivo à meia-noite, evento que cruza dois dias, ausência de credenciais e preservação de bloqueios manuais sem apresentar datas desconhecidas como livres. Os novos testes exercitam o envio após consulta de uma data livre, preservação de nome/WhatsApp/cidade/data/UTM, recusa quando a data fica ocupada ou não pode ser confirmada e reenvio de um contato já salvo sem duplicação.
 
-**Banco:** execução das duas migrações, conteúdo inicial, permissões de tabelas e funções, `is_admin`, políticas de imagem, chave idempotente, histórico com autoria, data de autorização preservada, integridade das etapas, limitação persistente e expiração, reserva de orçamento, liquidação idempotente e consumo integral de chamada incerta.
+**Banco:** execução das três migrações, conteúdo inicial, permissões de tabelas e funções, `is_admin`, políticas de imagem, chave idempotente, histórico com autoria, data de autorização preservada, integridade das etapas, limitação persistente e expiração, reserva de orçamento, liquidação idempotente e consumo integral de chamada incerta. A migração 003 foi executada após criar um lead e personalizar um texto: a ordem dos filmes mudou, e o lead, seu histórico, o administrador e o texto personalizado foram preservados.
 
 ## Limites da verificação
 

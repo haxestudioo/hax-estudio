@@ -1,5 +1,6 @@
 import test, { afterEach, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { generateKeyPairSync } from 'node:crypto';
 import { seed } from '../dist/assets/seed.js';
 import bootstrap from '../netlify/functions/bootstrap.mjs';
 import publicConfig from '../netlify/functions/public-config.mjs';
@@ -48,7 +49,12 @@ function mock(handler) {
     const call = {
       url: String(url),
       ...options,
-      data: options.body ? JSON.parse(options.body) : undefined,
+      data:
+        options.body instanceof URLSearchParams
+          ? Object.fromEntries(options.body)
+          : options.body
+            ? JSON.parse(options.body)
+            : undefined,
     };
     calls.push(call);
     const result = await handler(call);
@@ -152,6 +158,118 @@ test('bloqueio de abuso impede a gravação do lead', async () => {
   );
   assert.equal(r.status, 429);
   assert.equal(calls.length, 1);
+});
+function calendarInput(utm = {}) {
+  const nextMonth = new Date();
+  nextMonth.setUTCDate(15);
+  nextMonth.setUTCMonth(nextMonth.getUTCMonth() + 1);
+  return {
+    name: 'Ana e Vini',
+    phone: '(44) 99999-0000',
+    event_city: 'Maringá',
+    event_date: nextMonth.toISOString().slice(0, 10),
+    consent: true,
+    request_key: userId,
+    intent: 'calendar',
+    utm,
+  };
+}
+const { privateKey: testGoogleKey } = generateKeyPairSync('rsa', {
+  modulusLength: 2048,
+  privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+  publicKeyEncoding: { type: 'spki', format: 'pem' },
+});
+function configureTestGoogle() {
+  process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL = 'calendar@example.iam.gserviceaccount.com';
+  process.env.GOOGLE_CALENDAR_ID = 'weddings@example.com';
+  process.env.GOOGLE_PRIVATE_KEY = testGoogleKey;
+}
+function calendarMock({ busy = [], manual = [], existing = false } = {}) {
+  mock((c) => {
+    if (c.url.includes('/rpc/consume_rate_limit')) return response(true);
+    if (c.url.includes('/leads?request_key=')) return response(existing ? [{ id: userId }] : []);
+    if (c.url.includes('/site_settings?')) return response(settings());
+    if (c.url.includes('/blocked_dates?')) return response(manual.map((date) => ({ date })));
+    if (c.url.includes('oauth2.googleapis.com/token'))
+      return response({ access_token: 'mock-google-token', expires_in: 3600 });
+    if (c.url.includes('/calendar/v3/freeBusy'))
+      return response({ calendars: { [process.env.GOOGLE_CALENDAR_ID]: { busy } } });
+    if (c.url.includes('/pipeline_stages?')) return response([{ id: 'novo' }]);
+    if (c.url.includes('/leads?on_conflict=') && c.method === 'POST') return response(null);
+  });
+}
+test('data livre consultada no Google grava nome, WhatsApp, cidade e data no CRM', async () => {
+  configureTestGoogle();
+  calendarMock();
+  const input = calendarInput();
+  const r = await capture(req('leads', input), { ip: '203.0.113.5' });
+  assert.equal(r.status, 201);
+  const write = calls.find((c) => c.url.includes('/leads?on_conflict='));
+  assert.deepEqual(
+    [
+      write.data.name,
+      write.data.phone,
+      write.data.event_city,
+      write.data.event_date,
+      write.data.origin,
+      write.data.stage_id,
+    ],
+    ['Ana e Vini', '44999990000', 'Maringá', input.event_date, 'agenda', 'novo'],
+  );
+  assert.ok(write.data.consented_at);
+  assert.ok(calls.findIndex((c) => c.url.includes('/calendar/v3/freeBusy')) < calls.indexOf(write));
+  assert.match(write.headers.Prefer, /ignore-duplicates/);
+});
+test('envio pela agenda conserva atribuição de campanha', async () => {
+  configureTestGoogle();
+  calendarMock();
+  const r = await capture(
+    req('leads', calendarInput({ utm_source: 'instagram', utm_campaign: 'noivas' })),
+    { ip: '203.0.113.5' },
+  );
+  assert.equal(r.status, 201);
+  const saved = calls.find((c) => c.url.includes('/leads?on_conflict=')).data;
+  assert.equal(saved.origin, 'campanha');
+  assert.equal(saved.utm.utm_campaign, 'noivas');
+  assert.match(saved.notes, /agenda do site/);
+});
+test('data que ficou ocupada no Google recusa o envio antes de gravar o lead', async () => {
+  configureTestGoogle();
+  const input = calendarInput();
+  calendarMock({
+    busy: [
+      { start: input.event_date + 'T10:00:00-03:00', end: input.event_date + 'T23:00:00-03:00' },
+    ],
+  });
+  const r = await capture(req('leads', input), { ip: '203.0.113.5' });
+  assert.equal(r.status, 409);
+  assert.equal((await r.json()).availability, 'busy');
+  assert.ok(!calls.some((c) => c.url.includes('/leads?on_conflict=')));
+});
+test('bloqueio manual da data impede envio mesmo sem integração Google', async () => {
+  const input = calendarInput();
+  calendarMock({ manual: [input.event_date] });
+  const r = await capture(req('leads', input), { ip: '203.0.113.5' });
+  assert.equal(r.status, 409);
+  assert.equal((await r.json()).availability, 'busy');
+  assert.ok(!calls.some((c) => c.url.includes('/leads?on_conflict=')));
+});
+test('data sem disponibilidade confirmada não registra um falso sucesso', async () => {
+  calendarMock();
+  const r = await capture(req('leads', calendarInput()), { ip: '203.0.113.5' });
+  assert.equal(r.status, 409);
+  assert.equal((await r.json()).availability, 'unknown');
+  assert.ok(!calls.some((c) => c.url.includes('/leads?on_conflict=')));
+});
+test('reenvio de contato já salvo confirma sucesso sem depender da agenda atual', async () => {
+  calendarMock({ existing: true });
+  const r = await capture(req('leads', calendarInput()), { ip: '203.0.113.5' });
+  assert.equal(r.status, 201);
+  assert.equal((await r.json()).success, true);
+  assert.equal(calls.length, 2);
+  assert.ok(
+    !calls.some((c) => c.url.includes('/calendar/') || c.url.includes('/leads?on_conflict=')),
+  );
 });
 test('mudança de lead concorrente retorna conflito e identifica o administrador', async () => {
   mock((c) => authorized(c) || (c.url.includes('/leads?') ? response([]) : undefined));

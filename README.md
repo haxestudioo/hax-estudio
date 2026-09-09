@@ -1,28 +1,32 @@
 # Hax Estúdio · Filmes de casamento
 
-Primeiro modelo completo do site de Leanderson: portfólio cinematográfico, captação de contatos, painel administrativo e CRM próprio. Projeto preparado para um repositório GitHub e publicação no Netlify, com Supabase como banco, autenticação e armazenamento de imagens.
+Versão 1.1 do site de Leanderson: portfólio cinematográfico, captação de contatos, painel administrativo e CRM próprio. Projeto preparado para um repositório GitHub e publicação no Netlify, com Supabase como banco, autenticação e armazenamento de imagens.
 
 **Comece por [docs/INSTALACAO.md](docs/INSTALACAO.md).** O guia cobre todas as contas, variáveis, scripts SQL e o primeiro acesso ao painel.
 
+**Já instalou a versão anterior? Siga [docs/ATUALIZACAO-V2.md](docs/ATUALIZACAO-V2.md).** A atualização preserva seu CRM e inclui um único SQL para colocar Vini na abertura.
+
 ## O que está incluído
 
-- Site escuro, com títulos em serifada, cores champanhe e marfim, abertura em vídeo, movimento discreto na rolagem, transições e cursor contextual sobre os filmes. Respeita a preferência por movimento reduzido.
+- Dois filmes em tela cheia com reprodução automática silenciosa e transição contínua na rolagem: Casamento Vini e Dani & Jonas. Sem texto ou seção intermediária.
+- Galeria com o título “O amor acontece. A gente guarda.”, filtros e reprodução por clique. Hover com leve inclinação da imagem e indicação translúcida de assistir, sem círculo no cursor.
+- Entradas de títulos por palavras, movimentos nas seções, botões animados e parallax suave. Respeita a preferência por movimento reduzido. Logo e favicon usam a imagem fornecida da Hax Estúdio de Criação.
 - Cinco filmes recuperados do portfólio anterior, capas reais, foto e apresentação de Leanderson. Cada filme tem um endereço próprio em `/filmes/endereco-do-filme`.
 - Formulário que grava leads no Supabase, com consentimento, data, cidade, mensagem e origem das campanhas. WhatsApp: **+55 44 99185-5451**.
 - Administração em `/admin/`: filmes, capas com upload, textos, coleções, depoimentos, dúvidas frequentes, cores e fontes.
 - CRM com cartões arrastáveis, seleção de etapa no celular, cadastro manual, maturação, propostas, próximas ações, histórico, busca, arquivo e exportação CSV.
-- Calendário público que consulta livre/ocupado do Google Agenda, com bloqueios adicionais no painel.
+- Calendário público integrado ao Google Agenda: uma data livre abre os campos WhatsApp, nome e cidade; o envio grava um lead no CRM. Uma data ocupada oferece consulta de exceções pelo WhatsApp. Bloqueios adicionais no painel.
 - Chatbot com OpenAI Responses API, ativação e desativação, teto mensal estimado em reais, registro de tokens e encaminhamento ao WhatsApp quando a IA estiver indisponível.
 
 ## Conteúdo inicial
 
 Os filmes são Dani & Jonas, Letícia & Eduardo, Casamento Vini, Mariana & Jackson e o pré-wedding de Dani & Jonas. A apresentação usa o texto do portfólio anterior. Os preços antigos de Storymaker, Highlights e Básico foram mantidos **em rascunho**, para revisão no painel antes de publicar. Depoimentos não foram inventados; a seção aparece após o cadastro de conteúdo real.
 
-A abertura usa o filme de Dani & Jonas pelo YouTube em computadores compatíveis. No celular e com movimento reduzido, usa a capa com reprodução por clique. Você pode substituir a abertura por uma montagem própria em MP4/WebM. Não há upload de filmes pesados no painel: eles são incorporados por link; as imagens podem ser enviadas ao Supabase.
+A abertura começa por Casamento Vini; o segundo filme é Dani & Jonas. Os dois usam a API oficial do YouTube para tocar sem som e pausar fora de vista. O botão “Assistir com som” abre o filme selecionado com controles. Se o navegador bloquear a reprodução automática, a capa permanece e há controle para iniciar manualmente. Com movimento reduzido, os dois filmes ficam em seções comuns de tela cheia e iniciam por clique. Você pode trocar cada vídeo e capa no painel. Não há upload de filmes pesados: eles são incorporados por link YouTube ou MP4/WebM; as imagens podem ser enviadas ao Supabase.
 
 ## Publicação
 
-1. Crie um projeto Supabase novo e execute `001_initial.sql` e `002_content.sql`, nesta ordem.
+1. Crie um projeto Supabase novo e execute `001_initial.sql`, `002_content.sql` e `003_cinematic_update.sql`, nesta ordem. Em um banco que já tem a versão anterior, execute somente `003_cinematic_update.sql`.
 2. Crie seu usuário em Authentication e autorize seu e-mail usando `supabase/admin.example.sql`.
 3. Coloque o conteúdo desta pasta em um repositório GitHub e importe-o no Netlify.
 4. Configure as variáveis do Supabase no Netlify e publique novamente.
@@ -54,6 +58,7 @@ Para desenvolvimento local com as funções, instale Node.js 22, copie `.env.exa
 ## Guias
 
 - [Instalação: GitHub, Netlify, Supabase, Google e OpenAI](docs/INSTALACAO.md)
+- [Atualizar a versão anterior preservando os leads](docs/ATUALIZACAO-V2.md)
 - [Operação do painel e do CRM](docs/USO-DO-PAINEL.md)
 - [Funcionamento do orçamento do chatbot](docs/CHATBOT.md)
 - [Verificações realizadas e limites da entrega](docs/VALIDACAO.md)

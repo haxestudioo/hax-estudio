@@ -11,8 +11,7 @@ Em **Filmes e capas**, escolha **Adicionar filme** ou edite um dos cinco filmes 
 - **Categoria:** Casamento ou Pré-wedding.
 - **Link do vídeo:** YouTube, Vimeo com reprodução incorporada habilitada, ou endereço HTTPS direto de MP4/WebM. Links de pastas ou páginas comuns do Google Drive não são links diretos de vídeo.
 - **Capa:** envie uma imagem ou informe uma URL HTTPS. O limite de upload é 8 MB, nos formatos JPEG, PNG, WebP e AVIF. Prefira imagens horizontais próximas de 16:9 e com tamanho otimizado.
-- **Prévia silenciosa:** opcional; aceita um MP4/WebM direto e toca ao passar o mouse, em computadores. Deixe vazio se não tiver uma versão curta preparada para isso.
-- **Filme em destaque:** prioriza o filme na listagem. Entre filmes com a mesma prioridade, vale o número de ordem, do menor para o maior. O primeiro recebe a maior área visual.
+- **Priorizar na galeria:** coloca o filme antes dos demais. Entre filmes com a mesma prioridade, vale o número de ordem, do menor para o maior. Os quadros da galeria mantêm o mesmo formato e precisam de clique para reproduzir; no celular ficam em uma coluna.
 - **Publicar no site:** desmarque para retirar o filme da listagem pública sem excluí-lo do banco.
 
 O upload de uma capa preenche o endereço no formulário. **Salve o formulário para aplicar a imagem ao filme.** Arquivos enviados e depois substituídos não são apagados automaticamente do Storage; isso evita quebrar imagens que ainda estejam em uso em outro lugar. A limpeza pode ser feita no Storage após conferir as referências.
@@ -23,7 +22,11 @@ Vídeos permanecem hospedados no YouTube, Vimeo ou em um serviço de mídia esco
 
 **Conteúdo → Textos e contato** permite editar títulos e textos das seções, as três etapas da experiência, a apresentação, o WhatsApp, links sociais, os textos de contato e os campos de busca. Uma quebra de linha nos títulos divide a frase e coloca a segunda parte em destaque.
 
-A abertura começa com Dani & Jonas. Você pode trocar a capa e o vídeo por um link YouTube ou um MP4/WebM direto. Para uma abertura com linguagem de trailer, prepare uma montagem curta e silenciosa com suas próprias cenas e informe a URL do arquivo. A página tem botão para pausar o fundo. No celular e com movimento reduzido, preserva a capa e o botão para assistir com som.
+A abertura começa com **Casamento Vini**, seguido de **Dani & Jonas**, ambos em tela cheia. Em **Textos e contato**, os campos **Capa do primeiro filme**, **Primeiro filme**, **Capa do segundo filme em tela cheia** e **Segundo filme em tela cheia** controlam essa sequência independentemente da galeria. Cada vídeo aceita YouTube ou MP4/WebM direto.
+
+A rolagem mistura os dois filmes sem texto intermediário. A reprodução automática é silenciosa; “Assistir com som” abre o filme atual e o botão ao lado pausa ou retoma a prévia. Fora da área visível, os vídeos são pausados. Navegadores que bloqueiam autoplay mantêm a capa e permitem iniciar pelo botão. Com movimento reduzido, os filmes usam duas seções comuns e reprodução manual.
+
+A logo enviada está em `dist/assets/hax-logo-original.png`; `hax-logo.svg` e `favicon.svg` incorporam a mesma imagem, enquadrada sem a margem transparente. Não houve redesenho da marca.
 
 As abas **Coleções**, **Depoimentos** e **Dúvidas frequentes** têm cadastro, edição, ordem e controle de publicação. Se não houver registros publicados, a seção correspondente fica oculta. Os preços de Storymaker, Highlights e Básico vieram do modelo anterior e estão em rascunho. Confira valores, prazos e itens antes de publicar. Um preço vazio mostra a coleção sem valor; zero mostra R$ 0.
 
@@ -32,6 +35,8 @@ Em **Cores e fontes**, escolha as cores principais e uma das fontes disponíveis
 ## Receber e organizar leads
 
 Os formulários chegam automaticamente à primeira etapa do tipo **Em andamento**, conforme a ordem configurada no funil. Cada contato inclui nome, telefone, data, cidade, mensagem, data de cadastro e autorização de contato. Se o visitante chegou com parâmetros UTM, a origem da campanha também é registrada.
+
+Na agenda pública, escolher uma data disponível revela WhatsApp, nome e cidade abaixo do calendário. O envio registra a data escolhida e a origem **agenda**; se houver UTM de origem, mantém **campanha** e seus parâmetros. O servidor consulta a disponibilidade novamente antes de salvar. Datas ocupadas exibem **Data indisponível** e o botão para consultar exceções pelo WhatsApp. Se a integração não puder confirmar a data, o site oferece consulta, sem apresentá-la como livre. Enviar o formulário não bloqueia a agenda nem confirma uma reserva.
 
 Em **Todos os leads** ou **Funil de vendas**, use **Adicionar lead** para registrar contatos que vieram por indicação, mensagem ou atendimento pessoal. Preencha a origem, por exemplo `indicação` ou `WhatsApp`. Marque a autorização de contato apenas quando ela tiver sido obtida.
 

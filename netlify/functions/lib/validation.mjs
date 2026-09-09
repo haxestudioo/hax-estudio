@@ -162,6 +162,8 @@ export function validateSettings(key, data) {
       'region',
       'hero_cover',
       'hero_video',
+      'second_video',
+      'second_cover',
       'about_title',
       'about_photo',
       'about',
@@ -189,10 +191,19 @@ export function validateSettings(key, data) {
       'footer_text',
     ];
     for (const k of keys) if (k in data) out[k] = text(data[k], k === 'about' ? 6000 : 2000);
-    for (const k of ['instagram', 'hero_cover', 'hero_video', 'about_photo', 'meeting_url'])
+    for (const k of [
+      'instagram',
+      'hero_cover',
+      'hero_video',
+      'second_cover',
+      'second_video',
+      'about_photo',
+      'meeting_url',
+    ])
       if (out[k] && !safeUrl(out[k])) throw new HttpError(400, 'URL inválida: ' + k);
-    if (out.hero_video && !['youtube', 'file'].includes(videoSpec(out.hero_video)?.type))
-      throw new HttpError(400, 'Vídeo de abertura inválido.');
+    for (const field of ['hero_video', 'second_video'])
+      if (out[field] && !['youtube', 'file'].includes(videoSpec(out[field])?.type))
+        throw new HttpError(400, 'Use YouTube ou MP4/WebM nos filmes de tela cheia.');
     if (out.whatsapp) {
       out.whatsapp = out.whatsapp.replace(/\D/g, '');
       if (out.whatsapp.length < 12 || out.whatsapp.length > 15)
