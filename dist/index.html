@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#11120f" />
+    <title>Hax Estúdio | Filmes de casamento</title>
+    <meta
+      name="description"
+      content="Filmes de casamento e pré-wedding por Leanderson, Hax Estúdio. Conheça nossas histórias e consulte sua data."
+    />
+    <link rel="icon" href="/assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@400;500;600&family=Manrope:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/assets/site.css" />
+    <script type="module" src="/assets/public.js"></script>
+  </head>
+  <body>
+    <a class="skip" href="#filmes">Ir para os filmes</a>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Hax Estúdio, início"
+        ><strong>HAX</strong><small>ESTÚDIO · CASAMENTOS</small></a
+      ><button class="menu-toggle" aria-controls="navigation" aria-expanded="false">
+        Menu <span>☰</span>
+      </button>
+      <nav id="navigation" aria-label="Principal">
+        <a href="#filmes">Filmes</a><a href="#experiencia">Nosso olhar</a
+        ><a href="#agenda">Agenda</a
+        ><a class="nav-cta" href="#contato">Conte sua história <span>↗</span></a>
+      </nav>
+    </header>
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-media">
+          <img
+            id="hero-cover"
+            src="/assets/covers/T0VN2ykadeg.jpg"
+            fetchpriority="high"
+            alt="Uma cena do filme de casamento de Dani e Jonas"
+          /><video id="hero-video" muted loop playsinline preload="none" hidden></video>
+        </div>
+        <div class="hero-shade"></div>
+        <div class="hero-copy">
+          <p class="eyebrow" id="hero-label">HAX ESTÚDIO / FILMES DE CASAMENTO</p>
+          <h1 id="hero-title">O dia passa.<br /><em>O que sentimos fica.</em></h1>
+          <p id="hero-intro">
+            Filmes de casamento para reviver o que faz a sua história ser única.
+          </p>
+          <a class="button primary" href="#contato">Consultar minha data <span>↗</span></a>
+        </div>
+        <div class="hero-bottom">
+          <a class="scroll-cue" href="#filmes">EXPLORE AS HISTÓRIAS <span>↓</span></a
+          ><button id="hero-play" class="reel-button">
+            <span class="round-play">▶</span
+            ><span>UM FILME HAX<small>Assistir à história</small></span></button
+          ><button id="pause-hero" class="text-button" hidden>Pausar fundo</button>
+        </div>
+      </section>
+      <section id="filmes" class="section films-section">
+        <div class="section-heading reveal">
+          <p class="eyebrow">01 / HISTÓRIAS QUE FICAM</p>
+          <h2 id="films-title">O amor acontece.<br /><em>A gente guarda.</em></h2>
+          <p id="films-intro">
+            Cada casal tem um jeito de viver o dia.<br />Cada filme encontra o seu próprio ritmo.
+          </p>
+        </div>
+        <div id="film-filters" class="filters" role="group" aria-label="Filtrar filmes">
+          <button class="active" data-filter="Todos">Todos os filmes</button
+          ><button data-filter="Casamento">Casamentos</button
+          ><button data-filter="Pré-wedding">Pré-wedding</button>
+        </div>
+        <div id="film-grid" class="film-grid" aria-live="polite"></div>
+      </section>
+      <section id="testimonials-section" class="section testimonials-section" hidden>
+        <p class="eyebrow">NAS PALAVRAS DE QUEM VIVEU</p>
+        <div id="testimonials"></div>
+      </section>
+      <section id="experiencia" class="section experience">
+        <div class="experience-intro reveal">
+          <p class="eyebrow">02 / ESTAR PRESENTE</p>
+          <h2 id="experience-title">Vocês vivem.<br /><em>Nós contamos.</em></h2>
+          <p id="experience-intro">
+            Do primeiro encontro à última cena, um filme construído a partir de vocês.
+          </p>
+        </div>
+        <div class="steps">
+          <article class="reveal">
+            <span>01</span>
+            <div>
+              <h3 id="step1-title">Antes do grande dia</h3>
+              <p id="step1-text">
+                Uma conversa para conhecer a história, os planos e aquilo que importa para vocês.
+              </p>
+            </div>
+          </article>
+          <article class="reveal">
+            <span>02</span>
+            <div>
+              <h3 id="step2-title">Durante o casamento</h3>
+              <p id="step2-text">
+                Um olhar atento para os encontros, os gestos e os momentos que acontecem
+                naturalmente.
+              </p>
+            </div>
+          </article>
+          <article class="reveal">
+            <span>03</span>
+            <div>
+              <h3 id="step3-title">Para reviver depois</h3>
+              <p id="step3-text">
+                Imagem, som e edição reunidos em uma memória que vocês possam sentir outra vez.
+              </p>
+            </div>
+          </article>
+        </div>
+      </section>
+      <section class="section about" id="sobre">
+        <div class="about-art reveal" id="about-art">
+          <span class="about-wordmark">hax.</span
+          ><span class="eyebrow">UM OLHAR. MUITAS HISTÓRIAS.</span>
+        </div>
+        <div class="about-copy reveal">
+          <p class="eyebrow" id="site-signature">LEANDERSON / HAX ESTÚDIO</p>
+          <h2 id="about-title">A sua história,<br /><em>com o nosso olhar.</em></h2>
+          <p id="about-text"></p>
+          <a
+            class="text-link whatsapp-link"
+            href="https://wa.me/5544991855451"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Vamos nos conhecer <span>↗</span></a
+          >
+        </div>
+      </section>
+      <section id="packages-section" class="section" hidden>
+        <div class="section-heading reveal">
+          <p class="eyebrow">UM FILME DO SEU JEITO</p>
+          <h2 id="packages-title">Nossas <em>coleções.</em></h2>
+          <p id="packages-intro">Encontre o formato que combina com a sua história.</p>
+        </div>
+        <div id="packages" class="packages"></div>
+      </section>
+      <section class="section calendar-section" id="agenda">
+        <div class="calendar-copy reveal">
+          <p class="eyebrow">03 / O PRIMEIRO PASSO</p>
+          <h2 id="calendar-title">Tem uma data<br /><em>em mente?</em></h2>
+          <p id="calendar-text">
+            Encontre o seu dia e conte seus planos. A consulta inicia nossa conversa; a reserva é
+            confirmada com a contratação.
+          </p>
+          <p id="calendar-status" class="muted" role="status">Carregando disponibilidade…</p>
+          <a class="text-link" href="#contato">Conversar sobre meu casamento <span>↗</span></a>
+        </div>
+        <div class="calendar-card">
+          <div class="calendar-toolbar">
+            <button id="prev-month" class="icon-button" aria-label="Mês anterior">←</button>
+            <h3 id="month-label"></h3>
+            <button id="next-month" class="icon-button" aria-label="Próximo mês">→</button>
+          </div>
+          <div class="weekdays" aria-hidden="true">
+            <span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span
+            ><span>S</span>
+          </div>
+          <div
+            id="calendar-days"
+            class="calendar-days"
+            aria-label="Calendário de disponibilidade"
+          ></div>
+          <div class="calendar-legend">
+            <span><i class="available"></i>Disponível</span
+            ><span><i class="busy"></i>Indisponível</span
+            ><span><i class="unknown"></i>A consultar</span>
+          </div>
+          <p id="selected-date" class="calendar-selection" aria-live="polite">
+            Selecione o dia do seu casamento.
+          </p>
+        </div>
+      </section>
+      <section id="faq-section" class="section faq-section" hidden>
+        <p class="eyebrow">ANTES DE COMEÇAR</p>
+        <h2 id="faq-title">Vamos tirar<br /><em>suas dúvidas.</em></h2>
+        <div id="faqs"></div>
+      </section>
+      <section class="section contact-section" id="contato">
+        <div class="contact-copy reveal">
+          <p class="eyebrow">O PRÓXIMO FILME PODE SER O DE VOCÊS</p>
+          <h2 id="contact-title">Vamos contar<br /><em>a sua história?</em></h2>
+          <p id="contact-text">
+            Conte um pouco sobre vocês e sobre o dia que estão imaginando. Vamos conversar sobre o
+            filme do seu casamento.
+          </p>
+          <p id="region" hidden></p>
+          <a
+            class="text-link whatsapp-link"
+            href="https://wa.me/5544991855451"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Prefiro conversar pelo WhatsApp <span>↗</span></a
+          ><a
+            id="meeting-link"
+            class="text-link"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+            hidden
+            >Agendar uma conversa <span>↗</span></a
+          >
+        </div>
+        <form id="lead-form" class="contact-form">
+          <div class="field">
+            <label for="lead-name">Como vocês se chamam?</label
+            ><input
+              id="lead-name"
+              name="name"
+              autocomplete="name"
+              placeholder="Seu nome e o nome do seu amor"
+              required
+              minlength="2"
+              maxlength="120"
+            />
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="lead-phone">WhatsApp</label
+              ><input
+                id="lead-phone"
+                name="phone"
+                autocomplete="tel"
+                inputmode="tel"
+                placeholder="(44) 99999-9999"
+                required
+                maxlength="24"
+              />
+            </div>
+            <div class="field">
+              <label for="lead-date">Data do casamento</label
+              ><input id="lead-date" name="event_date" type="date" required />
+            </div>
+          </div>
+          <div class="field">
+            <label for="lead-city">Cidade ou local do casamento</label
+            ><input
+              id="lead-city"
+              name="event_city"
+              autocomplete="address-level2"
+              placeholder="Onde a história vai acontecer?"
+              required
+              maxlength="160"
+            />
+          </div>
+          <div class="field">
+            <label for="lead-message">O que vocês estão imaginando? <small>(opcional)</small></label
+            ><textarea
+              id="lead-message"
+              name="message"
+              rows="3"
+              maxlength="2000"
+              placeholder="Queremos conhecer um pouco dos seus planos."
+            ></textarea>
+          </div>
+          <div class="honeypot" aria-hidden="true">
+            <label>Website<input name="website" tabindex="-1" autocomplete="off" /></label>
+          </div>
+          <label class="check-label"
+            ><input type="checkbox" name="consent" required />
+            <span
+              >Concordo em ser contatado pela Hax Estúdio sobre esta solicitação e li a
+              <a href="/privacidade.html">política de privacidade</a>.</span
+            ></label
+          ><button class="button primary" type="submit">
+            Enviar nossa história <span>↗</span>
+          </button>
+          <p id="form-status" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <a class="brand" href="/"><strong>HAX</strong><small>ESTÚDIO · CASAMENTOS</small></a>
+      <p id="footer-text">Histórias que merecem ficar.</p>
+      <div>
+        <a id="instagram-link" hidden target="_blank" rel="noopener noreferrer">Instagram ↗</a
+        ><a href="/privacidade.html">Privacidade</a><span id="copyright"></span>
+      </div>
+    </footer>
+    <a
+      class="floating-contact"
+      id="contact-widget"
+      href="https://wa.me/5544991855451"
+      target="_blank"
+      rel="noopener noreferrer"
+      ><span>◌</span> Vamos conversar</a
+    >
+    <div id="film-cursor" aria-hidden="true">ASSISTIR ↗</div>
+    <dialog id="video-dialog" class="video-dialog">
+      <button class="dialog-close" aria-label="Fechar filme">✕</button>
+      <div id="video-container"></div>
+    </dialog>
+    <dialog id="chat-dialog" class="chat-dialog">
+      <header>
+        <div>
+          <strong id="chat-brand">Hax Estúdio</strong><small>Assistente virtual · IA</small>
+        </div>
+        <button class="dialog-close" aria-label="Fechar conversa">✕</button>
+      </header>
+      <div class="chat-messages" id="chat-messages" aria-live="polite"></div>
+      <div class="chat-footer">
+        <a
+          class="whatsapp-link"
+          target="_blank"
+          rel="noopener noreferrer"
+          href="https://wa.me/5544991855451"
+          >Falar com Leanderson no WhatsApp ↗</a
+        >
+        <form id="chat-form">
+          <input
+            name="message"
+            aria-label="Sua mensagem"
+            placeholder="Escreva sua mensagem…"
+            required
+            maxlength="1500"
+          /><button type="submit" aria-label="Enviar mensagem">↑</button>
+        </form>
+      </div>
+    </dialog>
+  </body>
+</html>

@@ -1,0 +1,28 @@
+{
+  "source_page": "https://haxestudio.com.br/",
+  "source_data": "https://cdn.46graus.com/cache/pages/2949ad3a/0559fae7-3a84-41de-85b8-3dd87821acc5_03262026-152126.js",
+  "verified_at": "2026-09-08",
+  "portrait": {
+    "path": "dist/assets/leanderson.png",
+    "url": "https://cdn-sites-images.46graus.com/files/photos/2949ad3a/d5c9b242-739e-4ca0-a750-3940c4ec0614/foto-perfil-1024x1020.png",
+    "width": 1024,
+    "height": 1020,
+    "source_confidence": "high",
+    "visual_verified": true,
+    "attribution_basis": "Source component sits beside the public biography headed Leanderson Antonelli. Identity is attributed from the public page, not facial recognition."
+  },
+  "existing_hero": {
+    "type": "YouTube embed",
+    "video_id": "AciOu04BxZg",
+    "url": "https://youtu.be/AciOu04BxZg",
+    "native_video_file": null,
+    "note": "The existing owner website uses this YouTube work in its VideoBackground component. No native MP4/WebM was found in that component; no video stream was downloaded."
+  },
+  "cached_cover": {
+    "path": "dist/assets/covers/AciOu04BxZg-owner-cover.jpg",
+    "url": "https://cdn-sites-images.46graus.com/files/photos/2949ad3a/932b120a-faca-4fc6-8ae5-5c37977bdb88/youtube-480x360.jpg",
+    "width": 480,
+    "height": 360,
+    "note": "Lower resolution duplicate. Prefer the verified 1280×720 YouTube thumbnail."
+  }
+}

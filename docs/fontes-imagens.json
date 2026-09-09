@@ -1,0 +1,316 @@
+[
+  {
+    "id": "piCXHnJa9A8",
+    "watch_url": "https://www.youtube.com/watch?v=piCXHnJa9A8",
+    "category": "pre-wedding",
+    "verified_at": "2026-09-08",
+    "oembed_url": "https://www.youtube.com/oembed?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DpiCXHnJa9A8&format=json",
+    "oembed": {
+      "title": "Pré Wedding Mariana e Jackson (Morro da Pedra Branca)",
+      "author_name": "Hax Estúdio ",
+      "author_url": "https://www.youtube.com/@Haxestudiocriacao",
+      "type": "video",
+      "height": 113,
+      "width": 200,
+      "version": "1.0",
+      "provider_name": "YouTube",
+      "provider_url": "https://www.youtube.com/",
+      "thumbnail_height": 360,
+      "thumbnail_width": 480,
+      "thumbnail_url": "https://i.ytimg.com/vi/piCXHnJa9A8/hqdefault.jpg",
+      "html": "<iframe width=\"200\" height=\"113\" src=\"https://www.youtube.com/embed/piCXHnJa9A8?feature=oembed\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" referrerpolicy=\"strict-origin-when-cross-origin\" allowfullscreen title=\"Pré Wedding Mariana e Jackson (Morro da Pedra Branca)\"></iframe>"
+    },
+    "title": "Pré Wedding Mariana e Jackson (Morro da Pedra Branca)",
+    "thumbnail_checks": [
+      {
+        "url": "https://i.ytimg.com/vi/piCXHnJa9A8/maxresdefault.jpg",
+        "error": "The read operation timed out"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/piCXHnJa9A8/sddefault.jpg",
+        "error": "HTTP Error 502: Bad Gateway"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/piCXHnJa9A8/hqdefault.jpg",
+        "error": "The read operation timed out"
+      },
+      {
+        "id": "piCXHnJa9A8",
+        "url": "https://img.youtube.com/vi/piCXHnJa9A8/maxresdefault.jpg",
+        "status": 200,
+        "final_url": "https://img.youtube.com/vi/piCXHnJa9A8/maxresdefault.jpg",
+        "mime_type": "image/jpeg",
+        "width": 1280,
+        "height": 720,
+        "path": "dist/assets/covers/piCXHnJa9A8.jpg"
+      }
+    ],
+    "thumbnail_url": "https://img.youtube.com/vi/piCXHnJa9A8/maxresdefault.jpg",
+    "thumbnail_path": "dist/assets/covers/piCXHnJa9A8.jpg",
+    "thumbnail_width": 1280,
+    "thumbnail_height": 720,
+    "thumbnail_bytes": 54168,
+    "visually_verified": true,
+    "source_confidence": "high",
+    "couple_names": [
+      "Mariana",
+      "Jackson"
+    ],
+    "cover_description_pt": "Casal de branco, rosto a rosto, com montanhas e luz de pôr do sol ao fundo.",
+    "category_source": "user-provided categorization",
+    "title_source": "YouTube public oEmbed API",
+    "author_name": "Hax Estúdio",
+    "author_url": "https://www.youtube.com/@Haxestudiocriacao"
+  },
+  {
+    "id": "81_ixFOdWSs",
+    "watch_url": "https://www.youtube.com/watch?v=81_ixFOdWSs",
+    "category": "pre-wedding",
+    "verified_at": "2026-09-08",
+    "oembed_url": "https://www.youtube.com/oembed?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D81_ixFOdWSs&format=json",
+    "oembed": {
+      "title": "Pré Weedding Dani e Jonas",
+      "author_name": "Hax Estúdio ",
+      "author_url": "https://www.youtube.com/@Haxestudiocriacao",
+      "type": "video",
+      "height": 113,
+      "width": 200,
+      "version": "1.0",
+      "provider_name": "YouTube",
+      "provider_url": "https://www.youtube.com/",
+      "thumbnail_height": 360,
+      "thumbnail_width": 480,
+      "thumbnail_url": "https://i.ytimg.com/vi/81_ixFOdWSs/hqdefault.jpg",
+      "html": "<iframe width=\"200\" height=\"113\" src=\"https://www.youtube.com/embed/81_ixFOdWSs?feature=oembed\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" referrerpolicy=\"strict-origin-when-cross-origin\" allowfullscreen title=\"Pré Weedding Dani e Jonas\"></iframe>"
+    },
+    "title": "Pré Weedding Dani e Jonas",
+    "thumbnail_checks": [
+      {
+        "url": "https://i.ytimg.com/vi/81_ixFOdWSs/maxresdefault.jpg",
+        "error": "The read operation timed out"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/81_ixFOdWSs/sddefault.jpg",
+        "error": "The read operation timed out"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/81_ixFOdWSs/hqdefault.jpg",
+        "error": "The read operation timed out"
+      },
+      {
+        "id": "81_ixFOdWSs",
+        "url": "https://img.youtube.com/vi/81_ixFOdWSs/maxresdefault.jpg",
+        "status": 200,
+        "final_url": "https://img.youtube.com/vi/81_ixFOdWSs/maxresdefault.jpg",
+        "mime_type": "image/jpeg",
+        "width": 1280,
+        "height": 720,
+        "path": "dist/assets/covers/81_ixFOdWSs.jpg"
+      }
+    ],
+    "thumbnail_url": "https://img.youtube.com/vi/81_ixFOdWSs/maxresdefault.jpg",
+    "thumbnail_path": "dist/assets/covers/81_ixFOdWSs.jpg",
+    "thumbnail_width": 1280,
+    "thumbnail_height": 720,
+    "thumbnail_bytes": 84413,
+    "visually_verified": true,
+    "source_confidence": "high",
+    "couple_names": [
+      "Dani",
+      "Jonas"
+    ],
+    "cover_description_pt": "Casal se abraçando em um cenário natural com água e pedras.",
+    "category_source": "user-provided categorization",
+    "title_source": "YouTube public oEmbed API",
+    "author_name": "Hax Estúdio",
+    "author_url": "https://www.youtube.com/@Haxestudiocriacao",
+    "note": "Original YouTube title contains the spelling “Weedding”; display copy may normalize the category to “Pré-wedding”."
+  },
+  {
+    "id": "T0VN2ykadeg",
+    "watch_url": "https://www.youtube.com/watch?v=T0VN2ykadeg",
+    "category": "wedding",
+    "verified_at": "2026-09-08",
+    "oembed_url": "https://www.youtube.com/oembed?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DT0VN2ykadeg&format=json",
+    "oembed": {
+      "title": "Casamento Dani e Jonas",
+      "author_name": "Hax Estúdio ",
+      "author_url": "https://www.youtube.com/@Haxestudiocriacao",
+      "type": "video",
+      "height": 113,
+      "width": 200,
+      "version": "1.0",
+      "provider_name": "YouTube",
+      "provider_url": "https://www.youtube.com/",
+      "thumbnail_height": 360,
+      "thumbnail_width": 480,
+      "thumbnail_url": "https://i.ytimg.com/vi/T0VN2ykadeg/hqdefault.jpg",
+      "html": "<iframe width=\"200\" height=\"113\" src=\"https://www.youtube.com/embed/T0VN2ykadeg?feature=oembed\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" referrerpolicy=\"strict-origin-when-cross-origin\" allowfullscreen title=\"Casamento Dani e Jonas\"></iframe>"
+    },
+    "title": "Casamento Dani e Jonas",
+    "thumbnail_checks": [
+      {
+        "url": "https://i.ytimg.com/vi/T0VN2ykadeg/maxresdefault.jpg",
+        "error": "The read operation timed out"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/T0VN2ykadeg/sddefault.jpg",
+        "error": "The read operation timed out"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/T0VN2ykadeg/hqdefault.jpg",
+        "error": "The read operation timed out"
+      },
+      {
+        "id": "T0VN2ykadeg",
+        "url": "https://img.youtube.com/vi/T0VN2ykadeg/maxresdefault.jpg",
+        "status": 200,
+        "final_url": "https://img.youtube.com/vi/T0VN2ykadeg/maxresdefault.jpg",
+        "mime_type": "image/jpeg",
+        "width": 1280,
+        "height": 720,
+        "path": "dist/assets/covers/T0VN2ykadeg.jpg"
+      }
+    ],
+    "thumbnail_url": "https://img.youtube.com/vi/T0VN2ykadeg/maxresdefault.jpg",
+    "thumbnail_path": "dist/assets/covers/T0VN2ykadeg.jpg",
+    "thumbnail_width": 1280,
+    "thumbnail_height": 720,
+    "thumbnail_bytes": 83464,
+    "visually_verified": true,
+    "source_confidence": "high",
+    "couple_names": [
+      "Dani",
+      "Jonas"
+    ],
+    "cover_description_pt": "Noivos sorrindo durante uma cerimônia, com convidados ao fundo.",
+    "category_source": "user-provided categorization",
+    "title_source": "YouTube public oEmbed API",
+    "author_name": "Hax Estúdio",
+    "author_url": "https://www.youtube.com/@Haxestudiocriacao"
+  },
+  {
+    "id": "IjHimRHuBoA",
+    "watch_url": "https://www.youtube.com/watch?v=IjHimRHuBoA",
+    "category": "wedding",
+    "verified_at": "2026-09-08",
+    "oembed_url": "https://www.youtube.com/oembed?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DIjHimRHuBoA&format=json",
+    "oembed": {
+      "title": "Letícia e Eduardo",
+      "author_name": "Hax Estúdio ",
+      "author_url": "https://www.youtube.com/@Haxestudiocriacao",
+      "type": "video",
+      "height": 113,
+      "width": 200,
+      "version": "1.0",
+      "provider_name": "YouTube",
+      "provider_url": "https://www.youtube.com/",
+      "thumbnail_height": 360,
+      "thumbnail_width": 480,
+      "thumbnail_url": "https://i.ytimg.com/vi/IjHimRHuBoA/hqdefault.jpg",
+      "html": "<iframe width=\"200\" height=\"113\" src=\"https://www.youtube.com/embed/IjHimRHuBoA?feature=oembed\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" referrerpolicy=\"strict-origin-when-cross-origin\" allowfullscreen title=\"Letícia e Eduardo\"></iframe>"
+    },
+    "title": "Letícia e Eduardo",
+    "thumbnail_checks": [
+      {
+        "url": "https://i.ytimg.com/vi/IjHimRHuBoA/maxresdefault.jpg",
+        "error": "The read operation timed out"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/IjHimRHuBoA/sddefault.jpg",
+        "error": "The read operation timed out"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/IjHimRHuBoA/hqdefault.jpg",
+        "error": "The read operation timed out"
+      },
+      {
+        "id": "IjHimRHuBoA",
+        "url": "https://img.youtube.com/vi/IjHimRHuBoA/maxresdefault.jpg",
+        "status": 200,
+        "final_url": "https://img.youtube.com/vi/IjHimRHuBoA/maxresdefault.jpg",
+        "mime_type": "image/jpeg",
+        "width": 1280,
+        "height": 720,
+        "path": "dist/assets/covers/IjHimRHuBoA.jpg"
+      }
+    ],
+    "thumbnail_url": "https://img.youtube.com/vi/IjHimRHuBoA/maxresdefault.jpg",
+    "thumbnail_path": "dist/assets/covers/IjHimRHuBoA.jpg",
+    "thumbnail_width": 1280,
+    "thumbnail_height": 720,
+    "thumbnail_bytes": 101804,
+    "visually_verified": true,
+    "source_confidence": "high",
+    "couple_names": [
+      "Letícia",
+      "Eduardo"
+    ],
+    "cover_description_pt": "Noivos durante uma cerimônia ao ar livre, com convidados ao fundo.",
+    "category_source": "user-provided categorization",
+    "title_source": "YouTube public oEmbed API",
+    "author_name": "Hax Estúdio",
+    "author_url": "https://www.youtube.com/@Haxestudiocriacao"
+  },
+  {
+    "id": "AciOu04BxZg",
+    "watch_url": "https://www.youtube.com/watch?v=AciOu04BxZg",
+    "category": "wedding",
+    "verified_at": "2026-09-08",
+    "oembed_url": "https://www.youtube.com/oembed?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DAciOu04BxZg&format=json",
+    "oembed": {
+      "title": "Casamento Vini",
+      "author_name": "Hax Estúdio ",
+      "author_url": "https://www.youtube.com/@Haxestudiocriacao",
+      "type": "video",
+      "height": 113,
+      "width": 200,
+      "version": "1.0",
+      "provider_name": "YouTube",
+      "provider_url": "https://www.youtube.com/",
+      "thumbnail_height": 360,
+      "thumbnail_width": 480,
+      "thumbnail_url": "https://i.ytimg.com/vi/AciOu04BxZg/hqdefault.jpg",
+      "html": "<iframe width=\"200\" height=\"113\" src=\"https://www.youtube.com/embed/AciOu04BxZg?feature=oembed\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" referrerpolicy=\"strict-origin-when-cross-origin\" allowfullscreen title=\"Casamento Vini\"></iframe>"
+    },
+    "title": "Casamento Vini",
+    "thumbnail_checks": [
+      {
+        "url": "https://i.ytimg.com/vi/AciOu04BxZg/maxresdefault.jpg",
+        "error": "HTTP Error 502: Bad Gateway"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/AciOu04BxZg/sddefault.jpg",
+        "error": "The read operation timed out"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/AciOu04BxZg/hqdefault.jpg",
+        "error": "The read operation timed out"
+      },
+      {
+        "id": "AciOu04BxZg",
+        "url": "https://img.youtube.com/vi/AciOu04BxZg/maxresdefault.jpg",
+        "status": 200,
+        "final_url": "https://img.youtube.com/vi/AciOu04BxZg/maxresdefault.jpg",
+        "mime_type": "image/jpeg",
+        "width": 1280,
+        "height": 720,
+        "path": "dist/assets/covers/AciOu04BxZg.jpg"
+      }
+    ],
+    "thumbnail_url": "https://img.youtube.com/vi/AciOu04BxZg/maxresdefault.jpg",
+    "thumbnail_path": "dist/assets/covers/AciOu04BxZg.jpg",
+    "thumbnail_width": 1280,
+    "thumbnail_height": 720,
+    "thumbnail_bytes": 111003,
+    "visually_verified": true,
+    "source_confidence": "high",
+    "couple_names": null,
+    "cover_description_pt": "Noivos celebrando com pétalas e convidados ao ar livre.",
+    "category_source": "user-provided categorization",
+    "title_source": "YouTube public oEmbed API",
+    "author_name": "Hax Estúdio",
+    "author_url": "https://www.youtube.com/@Haxestudiocriacao",
+    "note": "Only the published title “Casamento Vini” is verified. Do not invent a second name or expand Vini."
+  }
+]
