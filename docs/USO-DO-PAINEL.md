@@ -24,7 +24,7 @@ Vídeos permanecem hospedados no YouTube, Vimeo ou em um serviço de mídia esco
 
 A abertura começa com **Casamento Vini**, seguido de **Dani & Jonas**, ambos em tela cheia. Em **Textos e contato**, os campos **Capa do primeiro filme**, **Primeiro filme**, **Capa do segundo filme em tela cheia** e **Segundo filme em tela cheia** controlam essa sequência independentemente da galeria. Cada vídeo aceita YouTube ou MP4/WebM direto.
 
-A rolagem mistura os dois filmes sem texto intermediário. A reprodução automática é silenciosa; “Assistir com som” abre o filme atual e o botão ao lado pausa ou retoma a prévia. Fora da área visível, os vídeos são pausados. Navegadores que bloqueiam autoplay mantêm a capa e permitem iniciar pelo botão. Com movimento reduzido, os filmes usam duas seções comuns e reprodução manual.
+A rolagem mistura os dois filmes sem texto intermediário. A reprodução automática é silenciosa; “Assistir com som” abre o filme atual e o botão ao lado pausa ou retoma a prévia. Fora da área visível, a reprodução é interrompida. No YouTube, pausar e iniciar novamente ou voltar a uma seção reinicia a prévia; arquivos MP4/WebM mantêm sua posição. Se o navegador bloquear autoplay, “Assistir com som” abre o player por clique. Com movimento reduzido, os filmes usam duas seções comuns, mantendo o autoplay silencioso. O botão de pausa continua disponível.
 
 A logo enviada está em `dist/assets/hax-logo-original.png`; `hax-logo.svg` e `favicon.svg` incorporam a mesma imagem, enquadrada sem a margem transparente. Não houve redesenho da marca.
 

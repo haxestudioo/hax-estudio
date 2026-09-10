@@ -5,123 +5,97 @@ export function cinemaBlend(progress) {
   const n = clamp((progress - 0.26) / 0.42);
   return n * n * (3 - 2 * n);
 }
-let youtubePromise;
-function youtubeReady() {
-  if (window.YT?.Player) return Promise.resolve(window.YT);
-  if (youtubePromise) return youtubePromise;
-  youtubePromise = new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error('YouTube unavailable')), 14000);
-    const previous = window.onYouTubeIframeAPIReady;
-    window.onYouTubeIframeAPIReady = () => {
-      clearTimeout(timeout);
-      previous?.();
-      resolve(window.YT);
-    };
-    const script = document.createElement('script');
-    script.src = 'https://www.youtube.com/iframe_api';
-    script.async = true;
-    script.onerror = () => {
-      clearTimeout(timeout);
-      reject(new Error('YouTube unavailable'));
-    };
-    document.head.append(script);
-  });
-  return youtubePromise;
-}
-
-class BackgroundFilm {
+// Background playback is native to the embed. Never wait for YT.onReady to start
+// or reveal it: a blocked/late iframe_api script used to leave both covers frozen.
+export class BackgroundFilm {
   constructor(container, url, onChange) {
     this.container = container;
     this.spec = videoSpec(url);
     this.onChange = onChange;
     this.active = false;
-    this.ready = false;
     this.started = false;
     this.dead = false;
     this.blocked = false;
+    this.frame = null;
   }
-  async prepare() {
+  prepare() {
     if (this.started || !this.spec || this.dead) return;
     this.started = true;
     if (this.spec.type === 'file') {
       this.video = document.createElement('video');
       Object.assign(this.video, {
+        autoplay: true,
         muted: true,
+        defaultMuted: true,
         loop: true,
         playsInline: true,
-        preload: 'metadata',
+        preload: 'auto',
       });
+      this.video.setAttribute('autoplay', '');
       this.video.setAttribute('muted', '');
       this.video.setAttribute('playsinline', '');
       this.video.src = this.spec.src;
       this.video.addEventListener('playing', () => this.playing());
       this.video.addEventListener('error', () => this.unavailable());
       this.container.append(this.video);
-      this.ready = true;
-      this.sync();
-      return;
-    }
-    if (this.spec.type !== 'youtube') {
+    } else if (this.spec.type !== 'youtube') {
       this.unavailable();
-      return;
-    }
-    try {
-      const YT = await youtubeReady();
-      if (this.dead) return;
-      const frame = document.createElement('iframe');
-      const url = new URL(this.spec.src);
-      for (const [key, value] of Object.entries({
-        enablejsapi: 1,
-        origin: location.origin,
-        autoplay: 0,
-        mute: 1,
-        controls: 0,
-        disablekb: 1,
-        playsinline: 1,
-        loop: 1,
-        playlist: this.spec.id,
-      }))
-        url.searchParams.set(key, value);
-      frame.src = url.href;
-      frame.title = 'Prévia silenciosa do filme em destaque';
-      frame.tabIndex = -1;
-      frame.allow = 'autoplay; fullscreen; picture-in-picture';
-      frame.referrerPolicy = 'strict-origin-when-cross-origin';
-      frame.setAttribute('aria-hidden', 'true');
-      this.container.append(frame);
-      this.player = new YT.Player(frame, {
-        events: {
-          onReady: (event) => {
-            if (this.dead) return;
-            this.player = event.target;
-            this.ready = true;
-            this.player.mute();
-            this.sync();
-          },
-          onStateChange: (event) => {
-            if (this.dead) return;
-            if (event.data === YT.PlayerState.PLAYING) {
-              this.playing();
-              if (!this.active) this.player.pauseVideo();
-            }
-          },
-          onAutoplayBlocked: () => this.unavailable(false),
-          onError: () => this.unavailable(),
-        },
-      });
-    } catch {
-      if (!this.dead) this.unavailable();
     }
   }
+  mountYouTube() {
+    if (this.frame || this.dead) return;
+    const url = new URL(this.spec.src);
+    for (const [key, value] of Object.entries({
+      autoplay: 1,
+      mute: 1,
+      controls: 0,
+      disablekb: 1,
+      playsinline: 1,
+      loop: 1,
+      playlist: this.spec.id,
+    }))
+      url.searchParams.set(key, value);
+    const frame = document.createElement('iframe');
+    this.frame = frame;
+    frame.title = 'Prévia silenciosa do filme em destaque';
+    frame.tabIndex = -1;
+    frame.width = '1280';
+    frame.height = '720';
+    frame.loading = 'eager';
+    frame.allow = 'autoplay; fullscreen; picture-in-picture';
+    frame.referrerPolicy = 'strict-origin-when-cross-origin';
+    frame.setAttribute('aria-hidden', 'true');
+    frame.addEventListener(
+      'load',
+      () => {
+        if (this.dead || !this.active || this.frame !== frame) return;
+        // "loaded" means the iframe is displayed, not a claim that a browser
+        // has allowed playback. The native embed requests muted autoplay itself.
+        this.container.classList.add('is-loaded');
+        this.onChange();
+      },
+      { once: true },
+    );
+    frame.src = url.href;
+    this.container.append(frame);
+  }
+  unmountYouTube() {
+    // Removing the iframe stops playback even when iframe_api is unavailable.
+    const frame = this.frame;
+    this.frame = null;
+    frame?.remove();
+    this.container.classList.remove('is-loaded');
+  }
   playing() {
-    if (this.dead) return;
+    if (this.dead || !this.active) return;
     this.blocked = false;
     this.container.classList.add('is-playing');
     this.onChange();
   }
   unavailable(hide = true) {
+    if (this.dead) return;
     this.blocked = true;
-    if (hide) this.container.classList.remove('is-playing');
+    if (hide) this.container.classList.remove('is-playing', 'is-loaded');
     this.onChange();
   }
   setActive(active, gesture = false) {
@@ -132,24 +106,22 @@ class BackgroundFilm {
     if (changed || gesture) this.sync();
   }
   sync() {
-    if (!this.ready || this.dead) return;
-    if (this.video) {
+    if (this.dead) return;
+    if (this.spec?.type === 'youtube') {
+      if (this.active && !this.blocked) this.mountYouTube();
+      else this.unmountYouTube();
+    } else if (this.video) {
       if (this.active && !this.blocked)
         this.video.play().catch(() => {
           if (this.active) this.unavailable(false);
         });
       else this.video.pause();
-    } else if (this.player) {
-      if (this.active && !this.blocked) {
-        this.player.mute();
-        this.player.playVideo();
-      } else this.player.pauseVideo();
     }
   }
   dispose() {
     this.dead = true;
     this.video?.pause();
-    this.player?.destroy();
+    this.unmountYouTube();
     this.container.replaceChildren();
     this.container.classList.remove('is-playing');
   }
@@ -170,7 +142,8 @@ export function createCinema({ first, second, onWatch }) {
     suspended = false,
     queued = false,
     disposed = false;
-  const paused = [reduce, reduce];
+  // Reduced motion simplifies scroll effects; playback still starts silently.
+  const paused = [false, false];
   const films = [first, second];
   const media = films.map(
     (url, i) =>
@@ -196,13 +169,13 @@ export function createCinema({ first, second, onWatch }) {
   function syncMedia(gesture = false) {
     const blend = cinemaBlend(progress);
     media.forEach((film, i) => {
-      const shown = reduce ? i === activeIndex : i === 0 ? blend < 0.995 : blend > 0.005;
+      // Start loading the second film shortly before it enters the crossfade.
+      const shown = reduce ? i === activeIndex : i === 0 ? blend < 0.995 : progress > 0.1;
       film.setActive(
         shown && inView && !paused[i] && !suspended && !document.hidden,
         gesture && i === activeIndex,
       );
     });
-    if (!reduce && inView && progress > 0.1) media[1].prepare();
     paintControl();
   }
   function draw() {

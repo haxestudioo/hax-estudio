@@ -1,6 +1,6 @@
 # Atualização · abertura cinematográfica e agenda
 
-Versão 1.1 · 9 de setembro de 2026.
+Versão 1.1 · com correção 1.1.1 do autoplay. Se você já instalou a 1.1 e executou o SQL 003, siga apenas [CORRECAO-AUTOPLAY.md](CORRECAO-AUTOPLAY.md); não repita o SQL.
 
 ## Se o site já está instalado
 
@@ -24,6 +24,6 @@ Siga [INSTALACAO.md](INSTALACAO.md) desde o início. Em um banco novo, execute o
 - Datas disponíveis abrem WhatsApp, nome e cidade, com gravação no CRM após nova consulta da disponibilidade. Datas ocupadas oferecem consulta de exceções pelo WhatsApp.
 - A logo fornecida aparece no site, no painel e no favicon. Títulos, seções e botões receberam animações.
 
-O autoplay segue as permissões do navegador e do provedor do vídeo; quando bloqueado, a capa e o início manual permanecem disponíveis. O visitante pode pausar a prévia ou abrir o filme com som. A preferência do sistema por movimento reduzido desativa as transições amplas e a reprodução automática. A implementação usa a [API oficial do player do YouTube](https://developers.google.com/youtube/iframe_api_reference) e seus [parâmetros de incorporação](https://developers.google.com/youtube/player_parameters).
+O autoplay segue as permissões do navegador e do provedor do vídeo; o botão “Assistir com som” permite abrir o player por clique. O visitante pode pausar a prévia ou abrir o filme com som. A preferência do sistema por movimento reduzido desativa as transições amplas; os filmes mantêm reprodução automática silenciosa e o botão de pausa. A implementação usa o player incorporado e os [parâmetros oficiais do YouTube](https://developers.google.com/youtube/player_parameters).
 
 As credenciais reais de Supabase, Google e OpenAI ficam nas suas contas. O site público de visualização da versão anterior não é atualizado apenas por baixar este ZIP; a versão corrigida é aplicada pelo deploy dos arquivos.

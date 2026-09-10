@@ -1,5 +1,11 @@
 # Verificação da entrega
 
+## Correção 1.1.1 do autoplay
+
+Após a entrega 1.1, foram adicionados e aprovados seis testes específicos em `tests/cinema.test.mjs`: criação imediata dos players sem API externa, autoplay silencioso dos dois vídeos, entrada do segundo antes da transição, exibição após carregamento, pausa/saída e eventos atrasados, além do comportamento com movimento reduzido. São testes locais do controlador, sem reprodução real do YouTube em navegador. Veja [CORRECAO-AUTOPLAY.md](CORRECAO-AUTOPLAY.md).
+
+Os resultados abaixo são o registro da verificação da versão 1.1. Os componentes de CRM, servidor e banco não foram alterados pela correção 1.1.1.
+
 Data: **9 de setembro de 2026** · versão 1.1.
 
 ## Resultado

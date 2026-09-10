@@ -24,7 +24,7 @@ async function walk(dir) {
         const source = await readFile(path, 'utf8');
         for (const m of source.matchAll(/(?:from\s+|import\s*)['"](\.[^'"]+)['"]/g)) {
           try {
-            await stat(resolve(dirname(path), m[1]));
+            await stat(resolve(dirname(path), m[1].split(/[?#]/)[0]));
           } catch {
             errors.push('Import não encontrado: ' + path + ' -> ' + m[1]);
           }

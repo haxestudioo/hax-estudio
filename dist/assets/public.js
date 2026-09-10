@@ -1,5 +1,5 @@
 import { seed } from './seed.js';
-import { createCinema } from './cinema.js';
+import { createCinema } from './cinema.js?v=1.1.1';
 import { animatedTitle, watchMotion, enhanceCard, startPortraitMotion } from './motion.js';
 import {
   esc,

@@ -1,8 +1,10 @@
 # Hax Estúdio · Filmes de casamento
 
-Versão 1.1 do site de Leanderson: portfólio cinematográfico, captação de contatos, painel administrativo e CRM próprio. Projeto preparado para um repositório GitHub e publicação no Netlify, com Supabase como banco, autenticação e armazenamento de imagens.
+Versão 1.1.1 do site de Leanderson: portfólio cinematográfico, captação de contatos, painel administrativo e CRM próprio. Projeto preparado para um repositório GitHub e publicação no Netlify, com Supabase como banco, autenticação e armazenamento de imagens.
 
 **Comece por [docs/INSTALACAO.md](docs/INSTALACAO.md).** O guia cobre todas as contas, variáveis, scripts SQL e o primeiro acesso ao painel.
+
+**Correção do autoplay:** veja [docs/CORRECAO-AUTOPLAY.md](docs/CORRECAO-AUTOPLAY.md). Esta revisão não exige novo SQL.
 
 **Já instalou a versão anterior? Siga [docs/ATUALIZACAO-V2.md](docs/ATUALIZACAO-V2.md).** A atualização preserva seu CRM e inclui um único SQL para colocar Vini na abertura.
 
@@ -22,7 +24,7 @@ Versão 1.1 do site de Leanderson: portfólio cinematográfico, captação de co
 
 Os filmes são Dani & Jonas, Letícia & Eduardo, Casamento Vini, Mariana & Jackson e o pré-wedding de Dani & Jonas. A apresentação usa o texto do portfólio anterior. Os preços antigos de Storymaker, Highlights e Básico foram mantidos **em rascunho**, para revisão no painel antes de publicar. Depoimentos não foram inventados; a seção aparece após o cadastro de conteúdo real.
 
-A abertura começa por Casamento Vini; o segundo filme é Dani & Jonas. Os dois usam a API oficial do YouTube para tocar sem som e pausar fora de vista. O botão “Assistir com som” abre o filme selecionado com controles. Se o navegador bloquear a reprodução automática, a capa permanece e há controle para iniciar manualmente. Com movimento reduzido, os dois filmes ficam em seções comuns de tela cheia e iniciam por clique. Você pode trocar cada vídeo e capa no painel. Não há upload de filmes pesados: eles são incorporados por link YouTube ou MP4/WebM; as imagens podem ser enviadas ao Supabase.
+A abertura começa por Casamento Vini; o segundo filme é Dani & Jonas. Os dois usam o player incorporado do YouTube com autoplay silencioso, sem depender do carregamento da API externa. Fora de vista, a reprodução é interrompida. O botão “Assistir com som” abre o filme selecionado com controles. Se o navegador bloquear a reprodução automática, use “Assistir com som” para abrir o player por clique. Com movimento reduzido, os dois filmes ficam em seções comuns de tela cheia e continuam iniciando automaticamente sem som. O controle de pausa permanece disponível. Você pode trocar cada vídeo e capa no painel. Não há upload de filmes pesados: eles são incorporados por link YouTube ou MP4/WebM; as imagens podem ser enviadas ao Supabase.
 
 ## Publicação
 

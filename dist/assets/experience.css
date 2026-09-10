@@ -60,7 +60,8 @@
   transition: opacity 0.7s ease;
   pointer-events: none;
 }
-.cinema-player.is-playing {
+.cinema-player.is-playing,
+.cinema-player.is-loaded {
   opacity: 1;
 }
 .cinema-player video {
