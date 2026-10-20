@@ -1,0 +1,29 @@
+name: Validar Hax Estudio
+on:
+  push:
+    branches: [envio-site]
+    paths:
+      - 'nova-versao/conteudo/**'
+      - '.github/workflows/validar-hax.yml'
+permissions:
+  contents: read
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: nova-versao/conteudo
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: nova-versao/conteudo/package-lock.json
+      - name: Instalar dependencias
+        run: npm ci
+      - name: Validar site e painel
+        run: npm test
+      - name: Conferir empacotamento das funcoes
+        run: ./node_modules/.bin/esbuild netlify/functions/*.mjs --bundle --platform=node --format=esm --outdir=/tmp/hax-funcoes
