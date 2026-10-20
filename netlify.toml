@@ -1,32 +1,28 @@
 [build]
-  publish = "dist"
   command = "npm run build"
-  functions = "netlify/functions"
+  publish = "dist"
 [build.environment]
   NODE_VERSION = "22"
 [functions]
+  directory = "netlify/functions"
   node_bundler = "esbuild"
-[[redirects]]
-  from = "/admin"
-  to = "/admin/"
-  status = 301
-[[redirects]]
-  from = "/filmes/*"
-  to = "/filme.html"
-  status = 200
-[[redirects]]
-  from = "/casamentos"
-  to = "/index.html"
-  status = 200
 [[headers]]
   for = "/*"
   [headers.values]
     X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' https://www.youtube.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-src https://www.youtube-nocookie.com https://player.vimeo.com https://calendar.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' https://www.youtube.com https://s.ytimg.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; font-src 'self'; connect-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; frame-src https://www.youtube.com https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
 [[headers]]
   for = "/admin/*"
   [headers.values]
     X-Robots-Tag = "noindex, nofollow"
     Cache-Control = "no-store"
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000"
+[dev]
+  publish = "dist"
+  port = 8888
