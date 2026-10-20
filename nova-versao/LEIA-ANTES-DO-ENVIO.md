@@ -1,16 +1,16 @@
 # Envio da nova versão do Hax Estúdio
 
-Esta pasta recebe os arquivos extraídos de Hax-Estudio-Site.zip, versão de 19/10/2026. A integração final será feita na branch teste após a conferência dos arquivos.
+Agora envie apenas o arquivo Hax-Estudio-Site.zip original. Não é necessário extrair nem selecionar as pastas.
 
-## Como enviar pelo navegador
+## Passos
 
-1. Baixe e extraia Hax-Estudio-Site.zip.
-2. Abra a pasta Hax-Estudio extraída.
-3. Nesta pasta nova-versao do GitHub, clique em Add file > Upload files.
-4. Primeiro, arraste a pasta public inteira. Preserve as subpastas. Confirme o envio diretamente na branch envio-site.
-5. Volte à mesma pasta nova-versao e envie as outras pastas e os arquivos que estão dentro de Hax-Estudio, exceto public (já enviada) e dist (será gerada na publicação).
-6. Use a mensagem Enviar nova versão [skip ci] em cada envio. O GitHub aceita até 100 arquivos por envio; divida em lotes menores mantendo as subpastas caso necessário.
+1. Abra esta pasta nova-versao na branch envio-site.
+2. Clique em Add file > Upload files.
+3. Arraste somente Hax-Estudio-Site.zip para a página.
+4. Use a mensagem Enviar ZIP do site. Não inclua [skip ci], pois a importação automática precisa executar.
+5. Confirme o envio diretamente na branch envio-site.
+6. Avise na conversa que o ZIP foi enviado.
 
-Não envie o ZIP fechado, credenciais, senhas, arquivos .env pessoais, node_modules ou .netlify. O arquivo .env.example do pacote pode ser enviado.
+A automação Importar ZIP do Hax Estudio extrairá os arquivos para nova-versao/conteudo e registrará o resultado em resultado-importacao.json. Ela atua somente nesta branch temporária. A integração final na branch teste será feita após a conferência dos arquivos.
 
-Após o envio, avise na conversa para que os arquivos sejam conferidos e a publicação continue. Esta pasta é temporária e não faz parte do site final.
+O ZIP original tem aproximadamente 13 MB, abaixo do limite de 25 MiB por arquivo no envio pelo navegador. Ao enviar o ZIP fechado, o GitHub recebe apenas um arquivo.
