@@ -1,0 +1,5 @@
+import {store} from '../lib/storage.mjs';
+import {json,decrypt} from '../lib/security.mjs';
+import {queryCalendar,monthBounds} from '../lib/calendar.mjs';
+export default async(req,context)=>{if(req.method!=='GET')return json({error:'Método não permitido.'},405);try{const month=new URL(req.url).searchParams.get('month')||'';monthBounds(month);const [year,m]=month.split('-').map(Number),now=new Date(),diff=(year-now.getUTCFullYear())*12+m-1-now.getUTCMonth();if(diff< -1||diff>18)return json({connected:false,days:{}},400);const saved=await store(context).get('private-calendar',{type:'json'});if(!saved)return json({connected:false,days:{}});const days=await queryCalendar(decrypt(saved),month);return json({connected:true,days,updatedAt:new Date().toISOString()},200,{'Cache-Control':'public, max-age=30, s-maxage=60'});}catch{return json({connected:false,days:{}},503);}};
+export const config={path:'/api/availability',rateLimit:{windowLimit:60,windowSize:60,aggregateBy:'ip',action:'rate_limit'}};

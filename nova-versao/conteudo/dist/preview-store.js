@@ -1,0 +1,6 @@
+const legacyKey='hax-preview-content';
+function openDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open('hax-estudio-preview',1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('drafts'))r.result.createObjectStore('drafts');};r.onerror=()=>reject(r.error);r.onsuccess=()=>resolve(r.result);});}
+async function transaction(mode,operation){const db=await openDB();try{return await new Promise((resolve,reject)=>{const tx=db.transaction('drafts',mode),req=operation(tx.objectStore('drafts'));tx.oncomplete=()=>resolve(req.result);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Não foi possível salvar a prévia.'));});}finally{db.close();}}
+export async function readPreview(){try{if(typeof indexedDB!=='undefined'){const content=await transaction('readonly',s=>s.get('content'));if(content)return content;}}catch{}try{return JSON.parse(localStorage.getItem(legacyKey));}catch{return null;}}
+export async function savePreview(content){if(typeof indexedDB==='undefined'){localStorage.setItem(legacyKey,JSON.stringify(content));return;}await transaction('readwrite',s=>s.put(content,'content'));try{localStorage.removeItem(legacyKey)}catch{}}
+export async function clearPreview(){if(typeof indexedDB!=='undefined')await transaction('readwrite',s=>s.delete('content'));try{localStorage.removeItem(legacyKey)}catch{}}
