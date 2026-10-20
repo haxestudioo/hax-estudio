@@ -1,0 +1,104 @@
+name: Importar ZIP do Hax Estudio
+
+on:
+  push:
+    branches: [envio-site]
+    paths:
+      - 'nova-versao/*.zip'
+      - '.github/workflows/importar-hax-zip.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: importar-hax-zip
+  cancel-in-progress: false
+
+jobs:
+  importar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Abrir a versao enviada
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Conferir e extrair o pacote
+        id: pacote
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, shutil, stat, zipfile
+          from pathlib import Path, PurePosixPath
+
+          entrada = Path('nova-versao')
+          if entrada.is_symlink():
+              raise SystemExit('A pasta de envio precisa ser uma pasta comum.')
+          pacotes = sorted(entrada.glob('*.zip'))
+          if not pacotes:
+              print('Preparado. Aguardando o envio do ZIP nesta pasta.')
+              raise SystemExit(0)
+          if len(pacotes) != 1:
+              raise SystemExit('Mantenha apenas o ZIP do site na pasta nova-versao.')
+          pacote = pacotes[0]
+          if pacote.is_symlink() or pacote.stat().st_size > 25 * 1024 * 1024:
+              raise SystemExit('O pacote deve ser um arquivo ZIP de ate 25 MiB.')
+
+          destino = entrada / 'conteudo'
+          if destino.is_symlink():
+              raise SystemExit('O destino da importacao nao pode ser um link.')
+          arquivos = {}
+          with zipfile.ZipFile(pacote) as zip_site:
+              itens = zip_site.infolist()
+              if len(itens) > 5000 or sum(i.file_size for i in itens) > 250 * 1024 * 1024:
+                  raise SystemExit('O ZIP excede o tamanho esperado para este site.')
+              for item in itens:
+                  partes = item.filename.split('/')
+                  if '\\' in item.filename or item.filename.startswith('/') or any(p in ('.', '..') for p in partes):
+                      raise SystemExit('O ZIP possui um caminho invalido.')
+                  caminho = PurePosixPath(item.filename)
+                  if not caminho.parts or caminho.parts[0] != 'Hax-Estudio':
+                      raise SystemExit('Use o ZIP original, com a pasta Hax-Estudio dentro.')
+                  if stat.S_ISLNK(item.external_attr >> 16):
+                      raise SystemExit('O ZIP nao pode conter links simbolicos.')
+                  if item.is_dir():
+                      continue
+                  relativo = PurePosixPath(*caminho.parts[1:])
+                  if not relativo.parts or any(p in ('.git', '.netlify', 'node_modules') for p in relativo.parts):
+                      raise SystemExit('O ZIP contem um arquivo que nao deve ser publicado.')
+                  if any(p.startswith('.env') and p != '.env.example' for p in relativo.parts):
+                      raise SystemExit('Remova arquivos de credenciais antes da importacao.')
+                  if relativo.as_posix() in arquivos:
+                      raise SystemExit('O ZIP possui caminhos duplicados.')
+                  arquivos[relativo.as_posix()] = zip_site.read(item)
+
+          obrigatorios = {'package.json', 'netlify.toml', 'src/content.json', 'public/app.js'}
+          if not obrigatorios.issubset(arquivos):
+              raise SystemExit('O ZIP nao contem o projeto completo esperado.')
+          json.loads(arquivos['package.json'])
+          json.loads(arquivos['src/content.json'])
+          if destino.exists():
+              shutil.rmtree(destino)
+          for nome, conteudo in arquivos.items():
+              caminho = destino / nome
+              caminho.parent.mkdir(parents=True, exist_ok=True)
+              caminho.write_bytes(conteudo)
+          resumo = {'arquivo': pacote.name, 'sha256': hashlib.sha256(pacote.read_bytes()).hexdigest(), 'arquivos_extraidos': len(arquivos)}
+          (entrada / 'resultado-importacao.json').write_text(json.dumps(resumo, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as saida:
+              saida.write('importado=true\n')
+          print(f'Importacao concluida: {len(arquivos)} arquivos.')
+          PY
+
+      - name: Salvar arquivos na branch de envio
+        if: steps.pacote.outputs.importado == 'true'
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f -- nova-versao/conteudo nova-versao/resultado-importacao.json
+          if git diff --cached --quiet; then
+            echo 'Os arquivos ja estao atualizados.'
+            exit 0
+          fi
+          git commit -m 'Importar arquivos do Hax Estudio [skip ci]'
+          git push origin HEAD:refs/heads/envio-site
