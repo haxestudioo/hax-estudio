@@ -1,0 +1,91 @@
+name: Verificar publicacao Hax
+on:
+  push:
+    branches: [envio-site]
+    paths:
+      - '.github/workflows/verificar-publicacao.yml'
+permissions:
+  contents: read
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+      - name: Preparar navegador
+        run: |
+          npm install --prefix /tmp/hax-browser --no-audit --no-fund playwright@1.64.1
+          /tmp/hax-browser/node_modules/.bin/playwright install --with-deps chromium
+      - name: Verificar site publicado
+        run: |
+          cat > /tmp/hax-verificar.cjs <<'JS'
+          const assert = require('node:assert/strict');
+          const { chromium } = require('/tmp/hax-browser/node_modules/playwright');
+          const base = 'https://hasestudio.netlify.app';
+          async function request(path, options = {}) {
+            const r = await fetch(base + path, {...options, signal: AbortSignal.timeout(30000)});
+            return r;
+          }
+          (async () => {
+            for (const path of ['/', '/admin/', '/sitemap.xml', '/robots.txt']) {
+              const r = await request(path); assert.equal(r.status, 200, path);
+            }
+            assert.match(await (await request('/build-config.js')).text(), /preview=false/);
+            assert.match(await (await request('/sitemap.xml')).text(), /https:\/\/hasestudio\.netlify\.app/);
+            const auth = await (await request('/api/auth')).json();
+            assert.equal(auth.authenticated, false);
+            const contentResponse = await request('/api/content');
+            assert.equal(contentResponse.status, 200, 'API de conteudo');
+            const {content} = await contentResponse.json();
+            assert.equal(content.version, 4); assert.equal(content.hero.height, 'full');
+            assert.equal(content.packages.length, 9);
+            for (const path of new Set([content.hero.poster, content.aboutPhoto, ...content.photos.slice(0, 4).map(p => p.src)])) {
+              assert.equal((await request(path, {method: 'HEAD'})).status, 200, path);
+            }
+            const month = new Date().toISOString().slice(0, 7);
+            const availabilityResponse = await request('/api/availability?month=' + month);
+            assert.equal(availabilityResponse.status, 200);
+            const availability = await availabilityResponse.json();
+            assert.equal(typeof availability.connected, 'boolean');
+            if (!availability.connected) assert.deepEqual(availability.days, {});
+            assert.equal((await request('/api/calendar-settings')).status, 401);
+            assert.equal((await request('/api/content', {method:'PUT', headers:{Origin:base,'Content-Type':'application/json'},body:'{}'})).status, 401);
+            assert.equal((await request('/api/auth', {method:'POST', headers:{'Content-Type':'application/json'},body:'{}'})).status, 403);
+            console.log('API publica OK; alteracoes sem login bloqueadas. Admin configurado:', auth.configured, 'Agenda conectada:', availability.connected);
+            const browser = await chromium.launch();
+            try {
+              for (const [width, height] of [[390,844],[768,1024],[1440,900]]) {
+                const page = await browser.newPage({viewport:{width,height}, reducedMotion:'reduce'});
+                await page.goto(base, {waitUntil:'domcontentloaded'});
+                await page.locator('h1').waitFor();
+                await page.evaluate(() => document.fonts.ready);
+                await page.locator('#promo-dialog').waitFor({state:'visible', timeout:15000});
+                const promoLink = await page.locator('#promo-dialog a[href*="wa.me"]').first().getAttribute('href');
+                assert(promoLink.includes('5544991855451'));
+                await page.locator('#promo-dialog [data-close-dialog]').click();
+                assert(await page.locator('#promo-dialog').isHidden());
+                if (await page.locator('.menu-toggle').isVisible()) {
+                  await page.locator('.menu-toggle').click();
+                  assert.equal(await page.locator('.menu-toggle').getAttribute('aria-expanded'), 'true');
+                  await page.locator('#main-nav a').first().click();
+                  assert.equal(await page.locator('.menu-toggle').getAttribute('aria-expanded'), 'false');
+                }
+                await page.locator('[data-category="video"]').click();
+                assert.equal(await page.locator('.package').count(), 4);
+                await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+                const overflow = await page.evaluate(() => ({width:innerWidth,html:document.documentElement.scrollWidth,body:document.body.scrollWidth}));
+                assert(overflow.html <= width + 1 && overflow.body <= width + 1, 'Rolagem lateral: ' + JSON.stringify(overflow));
+                await page.goto(base + '/admin/', {waitUntil:'domcontentloaded'});
+                await page.locator('#login-form').waitFor();
+                const adminWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+                assert(adminWidth <= width + 1, 'Rolagem lateral no admin');
+                console.log('Navegador OK em ' + width + 'px: popup, menu, pacotes, admin e largura.');
+                await page.close();
+              }
+            } finally { await browser.close(); }
+          })().catch(error => { console.error(error); process.exitCode = 1; });
+          
+          JS
+          node /tmp/hax-verificar.cjs
