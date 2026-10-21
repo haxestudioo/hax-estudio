@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 5,
   "site": {
     "brand": "Hax Estúdio",
     "name": "Leanderson Antoneli",
@@ -30,7 +30,7 @@
     "preTitle": "Pré-wedding.",
     "preBody": "Antes da cerimônia, existe a história de vocês. O pré-wedding é um ensaio para viver esse encontro com calma, em um lugar que faça sentido para o casal. Uma oportunidade de se reconhecer nas imagens e chegar ao grande dia à vontade diante da câmera.",
     "preNote": "Um passeio, uma conversa, o jeito de vocês. A direção é leve; o sentimento é real.",
-    "preCta": "Quero planejar nosso pré-wedding",
+    "preCta": "Conhecer os planos de pré-wedding",
     "weddingEyebrow": "02 / O DIA DE VOCÊS",
     "weddingTitle": "Casamento,\nem movimento.",
     "weddingBody": "A voz dos votos, os abraços, a música e a alegria de estar perto de quem importa. O filme reúne esses momentos em uma narrativa sensível, do preparo à celebração.",
@@ -45,11 +45,11 @@
     "externalEyebrow": "05 / UM TEMPO PARA VOCÊ",
     "externalTitle": "Ensaios externos.",
     "externalBody": "Luz natural, movimento e um cenário que converse com a sua personalidade. Um ensaio ao ar livre para celebrar quem você é, com liberdade, presença e direção em cada detalhe.",
-    "externalCta": "Quero viver essa experiência",
+    "externalCta": "Conhecer os planos de ensaio",
     "showsEyebrow": "06 / QUANDO A EMOÇÃO VIRA ENERGIA",
     "showsTitle": "Fotografia\nde shows.",
     "showsBody": "A força de uma apresentação está na presença do artista, na luz e na resposta do público. Registro essa conexão em fotografias para divulgação, portfólio e memória de quem faz o show acontecer.",
-    "showsCta": "Conversar sobre a cobertura",
+    "showsCta": "Solicitar uma proposta para o show",
     "faqTitle": "Antes do nosso\nprimeiro encontro.",
     "quickTitle": "Vamos começar pela sua data?",
     "directoryTitle": "Encontre a sua história",
@@ -68,7 +68,7 @@
     "filmsDescription": "A voz, o movimento, a atmosfera. Filmes que guardam mais do que imagens.",
     "investmentEyebrow": "ENCONTRE A COBERTURA PARA O SEU MOMENTO",
     "investmentTitle": "Seu momento.\nA sua escolha.",
-    "investmentBody": "Conheça os pacotes de fotografia, filmes de casamento e ensaios gestantes. Para ensaios externos e shows, preparei um atendimento sob medida.",
+    "investmentBody": "Escolha o seu momento e conheça os planos. Compare as opções com calma e vamos encontrar a cobertura que combina com a sua história.",
     "investmentNote": "Deslocamento, locação e necessidades especiais são alinhados no orçamento. A reserva da data é confirmada após a contratação. Imagens aéreas dependem das condições do local, do clima e das autorizações necessárias.",
     "experienceEyebrow": "DO PRIMEIRO OLÁ À ÚLTIMA MEMÓRIA",
     "experienceTitle": "Leve do começo ao fim.",
@@ -82,7 +82,8 @@
     "contactEyebrow": "VAMOS CRIAR ALGO QUE FIQUE?",
     "contactTitle": "A sua história merece\nser lembrada assim.",
     "contactBody": "Conte um pouco sobre vocês, a data e o lugar. Vou adorar conhecer os seus planos.",
-    "footerTagline": "Imagens para guardar. Sentimentos para reviver."
+    "footerTagline": "Imagens para guardar. Sentimentos para reviver.",
+    "maternityCta": "Conhecer os planos gestantes"
   },
   "hero": {
     "height": "full",
@@ -466,6 +467,78 @@
         "Entrega digital em alta resolução"
       ],
       "details": "Mais tempo para registrar essa fase com calma e variedade. Fotos entregues em até 7 dias úteis após o ensaio, pelo Google Drive. Roupas e eventual locação de espaço não estão incluídas."
+    },
+    {
+      "id": "brisa",
+      "category": "externo",
+      "name": "Brisa",
+      "subtitle": "Um encontro leve com a sua melhor versão.",
+      "price": 350,
+      "active": true,
+      "featured": false,
+      "features": [
+        "Até 1 hora de ensaio externo",
+        "20 fotos tratadas e editadas",
+        "Uma locação e uma produção de roupa",
+        "Direção de poses durante todo o ensaio",
+        "Entrega digital em alta resolução"
+      ],
+      "details": "Fotos entregues em até 7 dias úteis após o ensaio, pelo Google Drive. Local escolhido em conjunto. Roupas, maquiagem, taxas de locação e deslocamento fora da cidade não estão incluídos. Em caso de chuva, combinamos uma nova data."
+    },
+    {
+      "id": "horizonte",
+      "category": "externo",
+      "name": "Horizonte",
+      "subtitle": "Mais tempo, mais possibilidades de ser você.",
+      "price": 550,
+      "active": true,
+      "featured": true,
+      "features": [
+        "Até 1h30 de ensaio externo",
+        "40 fotos tratadas e editadas",
+        "Uma locação e até duas produções de roupa",
+        "Ensaio individual ou de casal",
+        "Orientação de looks e direção de poses",
+        "Entrega digital em alta resolução"
+      ],
+      "details": "Fotos entregues em até 7 dias úteis após o ensaio, pelo Google Drive. Uma experiência com mais variedade de luz, cenários e composições na mesma locação. Roupas, maquiagem, taxas de locação e deslocamento fora da cidade não estão incluídos. Em caso de chuva, combinamos uma nova data."
+    },
+    {
+      "id": "liberdade",
+      "category": "externo",
+      "name": "Liberdade",
+      "subtitle": "Uma experiência para explorar a sua história.",
+      "price": 750,
+      "active": true,
+      "featured": false,
+      "features": [
+        "Até 2 horas de ensaio externo",
+        "60 fotos tratadas e editadas",
+        "Até duas locações próximas, na mesma cidade",
+        "Até três produções de roupa",
+        "Ensaio individual, de casal ou em família",
+        "Planejamento dos cenários e direção de poses",
+        "Entrega digital em alta resolução"
+      ],
+      "details": "Fotos entregues em até 10 dias úteis após o ensaio, pelo Google Drive. O deslocamento entre as locações faz parte das duas horas de sessão. Roupas, maquiagem, taxas de locação e deslocamento fora da cidade não estão incluídos. Em caso de chuva, combinamos uma nova data."
+    },
+    {
+      "id": "show-presenca",
+      "category": "shows",
+      "name": "Presença de palco",
+      "subtitle": "A energia do seu show em cada imagem.",
+      "price": 0,
+      "quoteOnly": true,
+      "active": true,
+      "featured": true,
+      "features": [
+        "Cobertura fotográfica da apresentação",
+        "Registros do artista, da atmosfera e do público",
+        "Seleção e tratamento das imagens",
+        "Entrega digital em alta resolução",
+        "Duração e quantidade de fotos definidas na proposta"
+      ],
+      "details": "Valor a combinar conforme duração, local e necessidades da produção. Credenciamento, acesso ao palco e aos bastidores e prazo de entrega são alinhados antes da contratação."
     }
   ],
   "steps": [
@@ -509,13 +582,13 @@
     "delaySeconds": 5,
     "frequency": "session",
     "showBadge": true,
-    "image": "/assets/noiva-luz.webp",
-    "eyebrow": "MEMÓRIAS PARA SEMPRE",
+    "image": "/assets/noiva-retrato.webp",
+    "eyebrow": "PARA VIVER. PARA REVIVER.",
     "whatsappMessage": "Olá, Leanderson! Quero reivindicar o desconto de {desconto}% da Black Friday em um dos pacotes {pacotes}. Podemos conversar?",
     "active": true,
     "title": "Black Friday",
-    "headline": "O seu sim.\nUma condição especial.",
-    "description": "30% de desconto para guardar o que realmente importa.",
+    "headline": "Fotografia e filme\npara o seu casamento.",
+    "description": "Uma condição especial para transformar o seu grande dia em memórias que ficam.",
     "discount": 30,
     "packageIds": [
       "romance",

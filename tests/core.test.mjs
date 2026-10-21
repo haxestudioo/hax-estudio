@@ -28,3 +28,23 @@ test('Links de vídeo aceitam somente IDs e hosts válidos do YouTube',()=>{for(
 test('WhatsApp recebe o telefone correto e texto codificado',()=>{const u=new URL(wa(content,'Quero minha data & 30%'));assert.equal(u.pathname,'/5544991855451');assert.equal(u.searchParams.get('text'),'Quero minha data & 30%');});
 test('Todas as fotos e capas têm arquivos locais e versões pequenas',async()=>{for(const url of new Set([...content.photos.map(p=>p.src),content.hero.poster,content.aboutPhoto,...content.videos.map(v=>v.poster)])){await fs.access(new URL('../public'+url,import.meta.url));await fs.access(new URL('../public'+url.replace('.webp','-small.webp'),import.meta.url));}});
 test('HTML contém um H1, todos os destinos internos e nenhum download de imagem',()=>{const html=renderPage(content);assert.equal((html.match(/<h1>/g)||[]).length,1);for(const id of ['portfolio','filmes','gestantes','investimento','sobre','agenda','contato'])assert(html.includes(`id="${id}"`));assert(!html.includes('download='));assert(!html.includes('Lorem ipsum'));});
+
+test('Novos serviços são válidos e shows não anuncia preço zero no catálogo',async()=>{
+ const {isQuoteOnly}=await import('../public/ui.js');
+ const d=clone();const show=d.packages.find(p=>p.category==='shows');
+ assert(isQuoteOnly(show));assert.equal(packagePrice(show,d),null);
+ assert(!renderPackages(d,'shows').includes('R$'));
+ assert.equal(d.packages.filter(p=>p.category==='externo').length,3);
+ const html=await fs.readFile(new URL('../dist/index.html',import.meta.url),'utf8');
+ const schema=JSON.parse(html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s)[1]);
+ const offer=schema.hasOfferCatalog.itemListElement.find(x=>x.itemOffered.name===show.name);
+ assert(offer);assert(!('price' in offer));
+ d.packages.find(p=>p.id==='horizonte').quoteOnly=true;assert(validateContent(d));
+ assert.equal(packagePrice(d.packages.find(p=>p.id==='horizonte'),d),null);
+});
+test('Novos planos entram uma vez na migração e exclusões do admin são preservadas',async()=>{
+ const {upgradeContent}=await import('../public/content-model.js');
+ const old=clone();old.version=4;old.packages=old.packages.filter(p=>!['externo','shows'].includes(p.category));old.texts.heroTitle='Título personalizado';old.colors.ink='#123456';
+ const next=upgradeContent(old);assert.equal(next.packages.length,13);assert.equal(next.texts.heroTitle,old.texts.heroTitle);assert.equal(next.colors.ink,old.colors.ink);
+ next.packages=next.packages.filter(p=>p.id!=='brisa');assert.equal(upgradeContent(next).packages.length,12);
+});

@@ -1,4 +1,4 @@
-import {photoCategories,videoCategories} from '../../public/content-model.js';
+import {photoCategories,videoCategories,serviceCategories} from '../../public/content-model.js';
 import {youtubeId} from '../../public/ui.js';
 import {validatePresentation} from '../../public/presentation-model.js';
 const fail=msg=>{throw new Error(msg)};
@@ -9,7 +9,7 @@ export function validateContent(d){if(!d||JSON.stringify(d).length>220000)fail('
  if(!imageURL(d.promotion.image))fail('Imagem do pop-up inválida.');
  for(const t of d.testimonials)if(t.photo&&!imageURL(t.photo))fail('Foto do depoimento inválida.');
  for(const key of ['photos','videos','packages','faq','steps'])if(!Array.isArray(d[key])||d[key].length>100)fail('Lista inválida: '+key);
- const ids=new Set();for(const p of d.packages){if(!/^[a-z0-9-]{1,64}$/.test(p.id)||ids.has(p.id))fail('Identificação de pacote inválida ou duplicada.');ids.add(p.id);if(!['foto','video','gestante'].includes(p.category)||typeof p.active!=='boolean'||typeof p.featured!=='boolean')fail('Categoria ou situação do pacote inválida.');if(!Number.isFinite(p.price)||p.price<0||p.price>1000000)fail('Valor do pacote inválido.');for(const key of ['name','subtitle','details'])text(p[key],key);if(!Array.isArray(p.features)||p.features.length>30)fail('Lista de itens inválida.');p.features.forEach(v=>text(v,'Item',400));}
+ const ids=new Set();for(const p of d.packages){if(!/^[a-z0-9-]{1,64}$/.test(p.id)||ids.has(p.id))fail('Identificação de pacote inválida ou duplicada.');ids.add(p.id);if(!Object.hasOwn(serviceCategories,p.category)||typeof p.active!=='boolean'||typeof p.featured!=='boolean')fail('Categoria ou situação do pacote inválida.');if(p.quoteOnly!==undefined&&typeof p.quoteOnly!=='boolean')fail('Tipo de orçamento inválido.');if(!Number.isFinite(p.price)||p.price<0||p.price>1000000)fail('Valor do pacote inválido.');for(const key of ['name','subtitle','details'])text(p[key],key);if(!Array.isArray(p.features)||p.features.length>30)fail('Lista de itens inválida.');p.features.forEach(v=>text(v,'Item',400));}
  for(const p of d.photos){if(!imageURL(p.src)||!Object.hasOwn(photoCategories,p.category)||typeof p.active!=='boolean')fail('Foto inválida.');text(p.id,'ID',64);text(p.alt,'Descrição da foto',500);}
  for(const v of d.videos){if(!youtubeId(v.url)||!imageURL(v.poster)||typeof v.active!=='boolean'||!Object.hasOwn(videoCategories,v.category))fail('Vídeo inválido. Use um link do YouTube e uma capa válida.');for(const k of ['id','title','subtitle'])text(v[k],k,500);}
  for(const f of d.faq){text(f.question,'Pergunta',500);text(f.answer,'Resposta');}for(const s of d.steps){text(s.title,'Etapa',500);text(s.text,'Descrição');}

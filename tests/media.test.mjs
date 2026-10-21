@@ -127,7 +127,7 @@ test('Demonstração lê edições anteriores e salva no fallback quando Indexed
 
 test('Migração para capítulos importa as novas fotos uma única vez e preserva remoções posteriores',()=>{
  const old=structuredClone(content);old.version=2;old.photos=old.photos.filter(p=>!editorialPhotos.some(n=>n.id===p.id));old.videos.forEach(v=>delete v.category);
- const next=upgradeContent(old);assert.equal(next.version,4);assert.equal(next.photos.length,old.photos.length+editorialPhotos.length);
+ const next=upgradeContent(old);assert.equal(next.version,5);assert.equal(next.photos.length,old.photos.length+editorialPhotos.length);
  assert.equal(next.videos.find(v=>v.url.includes('81_ixFOdWSs')).category,'prewedding');assert.equal(next.videos.find(v=>v.url.includes('T0VN2ykadeg')).category,'casamento');
  next.photos=next.photos.filter(p=>p.id!=='show-palco');assert(!upgradeContent(next).photos.some(p=>p.id==='show-palco'));assert(validateContent(next));
 });

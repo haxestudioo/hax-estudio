@@ -1,9 +1,8 @@
-import {schedulePromotion} from './promotion-popup.js';
-import { renderPage, renderPackages, renderGallery, wa, icon, packageMessage, packagePrice } from './ui.js';
+import {schedulePromotion,setupPlans} from './plans.js';
+import { renderPage, renderGallery, wa, icon, packagePrice, isQuoteOnly } from './ui.js';
 import { preview } from './build-config.js';
 import {upgradeContent} from './content-model.js';
 import {readPreview} from './preview-store.js';
-import {setupPackageInteractions} from './interactions.js';
 let data=await fetch('/content.json').then(r=>r.json());
 if(preview){data=(await readPreview())||data;}
 else{try{const r=await fetch('/api/content',{signal:AbortSignal.timeout(5000)});if(r.ok){const payload=await r.json();data=payload.content||data;}}catch{}}
@@ -15,9 +14,9 @@ document.title=data.site.seoTitle;
 document.querySelector('meta[name="description"]').content=data.site.seoDescription;
 for(const [property,value] of [['og:title',data.site.seoTitle],['og:description',data.site.seoDescription]]){const meta=document.querySelector('meta[property="'+property+'"]');if(meta)meta.content=value;}
 const schemaNode=document.querySelector('script[type="application/ld+json"]');
-if(schemaNode){try{const schema=JSON.parse(schemaNode.textContent);schema.name=data.site.brand;schema.description=data.site.seoDescription;schema.telephone='+'+data.site.whatsapp;schema.sameAs=['https://www.instagram.com/'+data.site.instagram+'/'];schema.hasOfferCatalog.itemListElement=data.packages.filter(p=>p.active).map(p=>({'@type':'Offer',price:packagePrice(p,data),priceCurrency:'BRL',itemOffered:{'@type':'Service',name:p.name,description:p.features.join('. ')}}));schemaNode.textContent=JSON.stringify(schema);}catch{}}
+if(schemaNode){try{const schema=JSON.parse(schemaNode.textContent);schema.name=data.site.brand;schema.description=data.site.seoDescription;schema.telephone='+'+data.site.whatsapp;schema.sameAs=['https://www.instagram.com/'+data.site.instagram+'/'];schema.hasOfferCatalog.itemListElement=data.packages.filter(p=>p.active).map(p=>({'@type':'Offer',...(isQuoteOnly(p)?{}:{price:packagePrice(p,data),priceCurrency:'BRL'}),itemOffered:{'@type':'Service',name:p.name,description:p.features.join('. ')}}));schemaNode.textContent=JSON.stringify(schema);}catch{}}
 
-let category='foto',chosenDate='';
+let chosenDate='';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const header=$('.header'),menu=$('.menu-toggle');
 menu.addEventListener('click',()=>{const open=menu.getAttribute('aria-expanded')!=='true';menu.setAttribute('aria-expanded',String(open));menu.setAttribute('aria-label',open?'Fechar menu':'Abrir menu');$('#main-nav').classList.toggle('open',open);});
@@ -28,11 +27,6 @@ document.addEventListener('dragstart',e=>{if(e.target.closest('.protected-image'
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const reveal=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('is-visible');reveal.unobserve(e.target);}}),{threshold:.08});
 if(!reduced)$$('.reveal').forEach((e,i)=>{e.classList.add('will-reveal');e.style.setProperty('--reveal-delay',(i%2)*100+'ms');reveal.observe(e);});
-let disposePackages=setupPackageInteractions($('#packages'),{reduced});
-function updatePackageLinks(){ $$('.package-cta').forEach(a=>{const p=data.packages.find(p=>p.id===a.dataset.packageId);a.href=wa(data,packageMessage(p,data)+(chosenDate?' Minha data é '+chosenDate.split('-').reverse().join('/')+'.':''));}); }
-function setCategory(cat){disposePackages();category=cat;$$('[data-category]').forEach(b=>{b.classList.toggle('active',b.dataset.category===cat);b.setAttribute('aria-pressed',String(b.dataset.category===cat));});$('#packages').innerHTML=renderPackages(data,cat);const count=data.packages.filter(p=>p.active&&p.category===cat).length;$('#packages').classList.toggle('four',count===4);$('#packages').classList.toggle('two',count===2);updatePackageLinks();disposePackages=setupPackageInteractions($('#packages'),{reduced});}
-$$('[data-category]').forEach(b=>b.addEventListener('click',()=>setCategory(b.dataset.category)));
-$$('[data-jump-category]').forEach(b=>b.addEventListener('click',()=>setCategory(b.dataset.jumpCategory)));
 $$('[data-more-photos]').forEach(button=>button.addEventListener('click',()=>{
  const cat=button.dataset.morePhotos,target=$('#gallery-'+cat);
  if(!target)return;
@@ -56,11 +50,19 @@ if(inquiry){
   window.open(wa(data,`Olá, Leanderson! Meu nome é ${name}. Tenho interesse em ${service.toLowerCase()} para ${date}. Gostaria de consultar a disponibilidade e receber um orçamento.`),'_blank','noopener,noreferrer');
  });
 }
-let lastFocus=null;
-function showDialog(d){if(!d||d.open)return;lastFocus=document.activeElement;d.showModal();document.body.classList.add('dialog-open');if(d.id==='promo-dialog')d.dispatchEvent(new Event('hax:promo-open'));}
+const dialogFocus=new WeakMap();
+function showDialog(dialog){
+ if(!dialog||dialog.open)return;
+ const other=$('dialog[open]');
+ const trigger=other?dialogFocus.get(other):document.activeElement;
+ if(other)other.close();
+ dialogFocus.set(dialog,trigger);dialog.showModal();document.body.classList.add('dialog-open');
+ if(dialog.id==='promo-dialog')dialog.dispatchEvent(new Event('hax:promo-open'));
+}
+setupPlans(data,showDialog,{getDate:()=>chosenDate});
 $$('[data-open-promo]').forEach(b=>b.addEventListener('click',()=>showDialog($('#promo-dialog'))));
 $('#privacy-open').addEventListener('click',()=>showDialog($('#privacy-dialog')));
-$$('dialog').forEach(d=>{d.querySelector('[data-close-dialog]').addEventListener('click',()=>d.close());d.addEventListener('click',e=>{if(e.target===d){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close();}});d.addEventListener('close',()=>{document.body.classList.remove('dialog-open');lastFocus?.focus();});});
+$$('dialog').forEach(d=>{d.querySelector('[data-close-dialog]').addEventListener('click',()=>d.close());d.addEventListener('click',e=>{if(e.target===d){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close();}});d.addEventListener('close',()=>{if(!$('dialog[open]')){document.body.classList.remove('dialog-open');dialogFocus.get(d)?.focus();}});});
 schedulePromotion(data.promotion,showDialog);
 // Load players only when a film is close to view. One player runs at a time.
 let ytPromise;function loadYT(){if(window.YT?.Player)return Promise.resolve(window.YT);if(ytPromise)return ytPromise;ytPromise=new Promise((resolve,reject)=>{window.onYouTubeIframeAPIReady=()=>resolve(window.YT);const s=document.createElement('script');s.src='https://www.youtube.com/iframe_api';s.onerror=reject;document.head.append(s);setTimeout(()=>{if(!window.YT?.Player)reject(new Error('player unavailable'));},15000);});return ytPromise;}
@@ -77,7 +79,7 @@ if($('#calendar-days')){
  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
  const [y,m]=today.split('-').map(Number);let cursor=new Date(Date.UTC(y,m-1,1)),statuses={},connected=false,requestNo=0,loading=false;
  const monthKey=()=>cursor.toISOString().slice(0,7);
- function paint(){const year=cursor.getUTCFullYear(),month=cursor.getUTCMonth(),days=new Date(Date.UTC(year,month+1,0)).getUTCDate(),first=cursor.getUTCDay();$('#calendar-month').textContent=new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric',timeZone:'UTC'}).format(cursor);$('#prev-month').disabled=monthKey()<=today.slice(0,7);$('#next-month').disabled=(year-y)*12+month-(m-1)>=18;$('#calendar-days').innerHTML='<span></span>'.repeat(first)+Array.from({length:days},(_,i)=>{const date=monthKey()+'-'+String(i+1).padStart(2,'0'),s=connected?(statuses[date]||'unknown'):'unknown',past=date<today;return `<button class="${s}${date===chosenDate?' selected':''}${date===today?' today':''}" ${past?'disabled':''} data-date="${date}" aria-pressed="${date===chosenDate}" aria-label="${i+1} de ${$('#calendar-month').textContent}: ${past?'data passada':s==='available'?'disponível':s==='busy'?'indisponível':'a consultar'}">${i+1}</button>`;}).join('');$('#calendar-days').querySelectorAll('button:not(:disabled)').forEach(b=>b.addEventListener('click',()=>{chosenDate=b.dataset.date;paint();selectedStatus();updatePackageLinks();}));}
+ function paint(){const year=cursor.getUTCFullYear(),month=cursor.getUTCMonth(),days=new Date(Date.UTC(year,month+1,0)).getUTCDate(),first=cursor.getUTCDay();$('#calendar-month').textContent=new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric',timeZone:'UTC'}).format(cursor);$('#prev-month').disabled=monthKey()<=today.slice(0,7);$('#next-month').disabled=(year-y)*12+month-(m-1)>=18;$('#calendar-days').innerHTML='<span></span>'.repeat(first)+Array.from({length:days},(_,i)=>{const date=monthKey()+'-'+String(i+1).padStart(2,'0'),s=connected?(statuses[date]||'unknown'):'unknown',past=date<today;return `<button class="${s}${date===chosenDate?' selected':''}${date===today?' today':''}" ${past?'disabled':''} data-date="${date}" aria-pressed="${date===chosenDate}" aria-label="${i+1} de ${$('#calendar-month').textContent}: ${past?'data passada':s==='available'?'disponível':s==='busy'?'indisponível':'a consultar'}">${i+1}</button>`;}).join('');$('#calendar-days').querySelectorAll('button:not(:disabled)').forEach(b=>b.addEventListener('click',()=>{chosenDate=b.dataset.date;paint();selectedStatus();}));}
  function selectedStatus(){const status=statuses[chosenDate],date=chosenDate?.split('-').reverse().join('/');$('#calendar-status').textContent=chosenDate?(connected?status==='available'?`${date} está disponível. Vamos conversar sobre a sua reserva?`:status==='busy'?`${date} está indisponível. Vamos encontrar outra data?`:`Vamos confirmar a disponibilidade de ${date} pelo WhatsApp.`:`Vamos confirmar a disponibilidade de ${date} pelo WhatsApp.`):(loading?'Consultando a agenda…':connected?'Escolha uma data para conversar sobre sua celebração.':'Consulte sua data diretamente com a Hax Estúdio pelo WhatsApp.');$('#date-whatsapp').href=wa(data,chosenDate?`Olá, Leanderson! Gostaria de ${connected&&status==='busy'?'conversar sobre outras datas, pois vi que':'consultar a disponibilidade para'} ${date}${connected&&status==='busy'?' está indisponível.':'.'} Tenho interesse nos serviços da Hax Estúdio.`:'Olá, Leanderson! Gostaria de consultar uma data para meu evento.');}
  async function loadMonth(){const n=++requestNo;connected=false;statuses={};loading=true;paint();selectedStatus();if(!preview){try{const r=await fetch('/api/availability?month='+monthKey(),{signal:AbortSignal.timeout(12000)});const result=await r.json();if(n!==requestNo)return;if(r.ok&&result.connected===true){connected=true;statuses=result.days||{};}}catch{}}if(n!==requestNo)return;loading=false;paint();selectedStatus();}
  $('#prev-month').addEventListener('click',()=>{cursor.setUTCMonth(cursor.getUTCMonth()-1);loadMonth();});$('#next-month').addEventListener('click',()=>{cursor.setUTCMonth(cursor.getUTCMonth()+1);loadMonth();});loadMonth();

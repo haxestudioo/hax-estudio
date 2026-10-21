@@ -6,7 +6,7 @@ import seed from '../src/content.json' with {type:'json'};
 import {upgradeContent} from '../public/content-model.js';
 import {validateContent} from '../netlify/lib/validate.mjs';
 import {renderPage,renderPromotion} from '../public/ui.js';
-import {schedulePromotion,promotionSeenKey} from '../public/promotion-popup.js';
+import {schedulePromotion,promotionSeenKey} from '../public/plans.js';
 
 function browser(html){
  const dom=new JSDOM(html,{url:'https://hax.test/',pretendToBeVisual:true});const w=dom.window;
@@ -20,7 +20,7 @@ function browser(html){
 test('Migração inclui os depoimentos existentes e preserva as edições e exclusões',()=>{
  const old=structuredClone(seed);old.version=3;delete old.testimonials;delete old.testimonialSettings;delete old.aboutAppearance;delete old.hero.overlay;delete old.promotion.autoOpen;
  old.texts.heroTitle='Título do proprietário';old.aboutPhoto='/assets/votos.webp';old.promotion.active=false;
- const next=upgradeContent(old);assert.equal(next.version,4);assert.equal(next.testimonials.length,2);assert.equal(next.hero.overlay,48);assert.equal(next.promotion.active,false);assert.equal(next.aboutPhoto,old.aboutPhoto);assert.equal(next.texts.heroTitle,old.texts.heroTitle);assert(validateContent(next));
+ const next=upgradeContent(old);assert.equal(next.version,5);assert.equal(next.testimonials.length,2);assert.equal(next.hero.overlay,48);assert.equal(next.promotion.active,false);assert.equal(next.aboutPhoto,old.aboutPhoto);assert.equal(next.texts.heroTitle,old.texts.heroTitle);assert(validateContent(next));
  next.testimonials=[];next.hero.height='compact';next.aboutAppearance.size=165;next.promotion.delaySeconds=12;
  const again=upgradeContent(next);assert.deepEqual(again.testimonials,[]);assert.equal(again.aboutAppearance.size,165);assert.equal(again.hero.height,'compact');assert.equal(again.promotion.delaySeconds,12);assert(!renderPage(again).includes('id="depoimentos"'));
 });

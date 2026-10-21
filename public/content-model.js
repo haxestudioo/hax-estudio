@@ -2,6 +2,13 @@ import {upgradePresentation} from './presentation-model.js';
 export const brandPalette={paper:'#faf8f3',ink:'#343b2e',accent:'#606b49',soft:'#efeee6',muted:'#707468',highlight:'#ded5bd'};
 export const photoCategories={casamento:'Fotografia de casamento',prewedding:'Pré-wedding',gestante:'Gestantes',externo:'Ensaios externos',shows:'Fotografia de shows'};
 export const videoCategories={casamento:'Casamento',prewedding:'Pré-wedding'};
+export const serviceCategories={video:'Filmes & Storymaker',foto:'Fotografia de casamento',gestante:'Ensaios gestantes',externo:'Ensaios externos',shows:'Fotografia de shows'};
+export const additionalPackages=[
+ {id:'brisa',category:'externo',name:'Brisa',subtitle:'Um encontro leve com a sua melhor versão.',price:350,active:true,featured:false,features:['Até 1 hora de ensaio externo','20 fotos tratadas e editadas','Uma locação e uma produção de roupa','Direção de poses durante todo o ensaio','Entrega digital em alta resolução'],details:'Fotos entregues em até 7 dias úteis após o ensaio, pelo Google Drive. Local escolhido em conjunto. Roupas, maquiagem, taxas de locação e deslocamento fora da cidade não estão incluídos. Em caso de chuva, combinamos uma nova data.'},
+ {id:'horizonte',category:'externo',name:'Horizonte',subtitle:'Mais tempo, mais possibilidades de ser você.',price:550,active:true,featured:true,features:['Até 1h30 de ensaio externo','40 fotos tratadas e editadas','Uma locação e até duas produções de roupa','Ensaio individual ou de casal','Orientação de looks e direção de poses','Entrega digital em alta resolução'],details:'Fotos entregues em até 7 dias úteis após o ensaio, pelo Google Drive. Uma experiência com mais variedade de luz, cenários e composições na mesma locação. Roupas, maquiagem, taxas de locação e deslocamento fora da cidade não estão incluídos. Em caso de chuva, combinamos uma nova data.'},
+ {id:'liberdade',category:'externo',name:'Liberdade',subtitle:'Uma experiência para explorar a sua história.',price:750,active:true,featured:false,features:['Até 2 horas de ensaio externo','60 fotos tratadas e editadas','Até duas locações próximas, na mesma cidade','Até três produções de roupa','Ensaio individual, de casal ou em família','Planejamento dos cenários e direção de poses','Entrega digital em alta resolução'],details:'Fotos entregues em até 10 dias úteis após o ensaio, pelo Google Drive. O deslocamento entre as locações faz parte das duas horas de sessão. Roupas, maquiagem, taxas de locação e deslocamento fora da cidade não estão incluídos. Em caso de chuva, combinamos uma nova data.'},
+ {id:'show-presenca',category:'shows',name:'Presença de palco',subtitle:'A energia do seu show em cada imagem.',price:0,quoteOnly:true,active:true,featured:true,features:['Cobertura fotográfica da apresentação','Registros do artista, da atmosfera e do público','Seleção e tratamento das imagens','Entrega digital em alta resolução','Duração e quantidade de fotos definidas na proposta'],details:'Valor a combinar conforme duração, local e necessidades da produção. Credenciamento, acesso ao palco e aos bastidores e prazo de entrega são alinhados antes da contratação.'}
+];
 export const editorialTexts={
  storyEyebrow:'CADA FASE TEM A SUA BELEZA',
  storyTitle:'Há momentos que passam.\nE histórias que ficam.',
@@ -56,6 +63,14 @@ export function upgradeContent(input){
   if(old&&pre&&v.subtitle==='FILME DE CASAMENTO · HAX ESTÚDIO')next.subtitle='PRÉ-WEDDING · HAX ESTÚDIO';
   return next;
  });
- return upgradePresentation({...input,colors:old?{...brandPalette}:{...brandPalette,...input.colors},texts:{...editorialTexts,...input.texts},photos,videos});
+ const next=upgradePresentation({...input,colors:old?{...brandPalette}:{...brandPalette,...input.colors},texts:{...editorialTexts,...input.texts},photos,videos});
+ if(Number(input.version||1)<5){
+  next.packages=[...(input.packages||[])];
+  for(const p of additionalPackages)if(!next.packages.some(x=>x.id===p.id))next.packages.push(structuredClone(p));
+  if(next.promotion.headline==='O seu sim.\nUma condição especial.')next.promotion.headline='Fotografia e filme\npara o seu casamento.';
+  if(next.promotion.image==='/assets/noiva-luz.webp')next.promotion.image='/assets/noiva-retrato.webp';
+  if(next.texts.investmentBody?.includes('Para ensaios externos e shows'))next.texts.investmentBody='Escolha o seu momento e conheça os planos. Compare as opções com calma e vamos encontrar a cobertura que combina com a sua história.';
+ }
+ return {...next,version:Math.max(5,Number(next.version)||1)};
 }
 export function reorder(items,from,to){if(!Array.isArray(items)||!Number.isInteger(from)||!Number.isInteger(to)||from<0||to<0||from>=items.length||to>=items.length||from===to)return false;const [item]=items.splice(from,1);items.splice(to,0,item);return true;}

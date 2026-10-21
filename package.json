@@ -7,7 +7,7 @@
     "build": "node scripts/build.mjs",
     "test": "node scripts/build.mjs && node --test tests/*.test.mjs",
     "setup-admin": "node scripts/setup-admin.mjs",
-    "dev": "npx netlify-cli dev"
+    "dev:netlify": "npx netlify-cli dev"
   },
   "engines": {
     "node": ">=22"
