@@ -1,4 +1,4 @@
-# Hax Estúdioo
+# Hax Estúdio
 
 **Entrega manual: 99 arquivos na pasta extraída.** Envie o conteúdo de `Hax-Estudio` à raiz da branch `teste`, sem enviar o ZIP e sem incluir `node_modules`. O Netlify gera `dist` no build.
 
