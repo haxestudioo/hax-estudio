@@ -28,7 +28,7 @@ test('Interface pública: capítulos, galerias independentes, orçamento, pacote
  let msg=new URL(opened).searchParams.get('text');assert(msg.includes('Camila & João'));assert(msg.includes('20/10/2099'));assert(msg.includes('Essencial'));assert(msg.includes('1.540'));assert(msg.includes('30%'));assert.equal(new URL(opened).pathname,'/5544991855451');
  $('[data-plan-service="externo"]').click();assert.equal($('#plan-inquiry [name="plan"]').value,'horizonte');assert.equal($('#plan-inquiry [name="name"]').value,'Camila & João');assert(!$('#plan-form-panel').hidden);
  $('#plan-inquiry [name="plan"]').value='liberdade';$('#plan-inquiry [name="plan"]').dispatchEvent(new dom.window.Event('change'));
- $('#plan-inquiry').dispatchEvent(new dom.window.Event('submit',{cancelable:true}));msg=new URL(opened).searchParams.get('text');assert(msg.includes('Liberdade'));assert(msg.includes('750'));assert(!msg.includes('Black Friday'));
+ $('#plan-inquiry').dispatchEvent(new dom.window.Event('submit',{cancelable:true}));msg=new URL(opened).searchParams.get('text');assert(msg.includes('Liberdade'));assert(msg.includes('750'));assert(!msg.includes('Black November'));
  $('[data-plan-service="shows"]').click();$('#plan-inquiry').dispatchEvent(new dom.window.Event('submit',{cancelable:true}));msg=new URL(opened).searchParams.get('text');assert(msg.includes('a combinar'));assert(!msg.includes('R$'));
  $('#plans-dialog [data-close-dialog]').click();assert(!$('#plans-dialog').open);
  open('#portfolio','foto',3,'romance');$('#plans-dialog [data-close-dialog]').click();
