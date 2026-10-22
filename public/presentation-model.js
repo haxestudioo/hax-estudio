@@ -1,6 +1,6 @@
 export const heroDefaults={height:'full',alignment:'center',overlay:48,showInquiry:true};
 export const portraitDefaults={size:220,positionX:50,positionY:20};
-export const promotionDefaults={autoOpen:true,delaySeconds:5,frequency:'session',showBadge:true,image:'/assets/noiva-luz.webp',eyebrow:'MEMÓRIAS PARA SEMPRE',whatsappMessage:'Olá, Leanderson! Quero reivindicar o desconto de {desconto}% da Black Friday em um dos pacotes {pacotes}. Podemos conversar?'};
+export const promotionDefaults={autoOpen:true,delaySeconds:5,frequency:'session',showBadge:true,image:'/assets/noiva-luz.webp',eyebrow:'MEMÓRIAS PARA SEMPRE',whatsappMessage:'Olá, Leanderson! Quero reivindicar o desconto de {desconto}% da Black November em um dos pacotes {pacotes}. Podemos conversar?'};
 export const presentationTexts={heroSecondaryCta:'Conheça nossas histórias',testimonialsEyebrow:'PALAVRAS DE QUEM VIVEU',testimonialsTitle:'O que fica,\nna voz de vocês.',testimonialsBody:'Depois do grande dia, a emoção encontra um jeito de voltar. Estas são algumas das palavras que recebi de quem confiou sua história à Hax Estúdio.'};
 // Depoimentos e retratos já publicados pelo proprietário em haxestudio.com.br.
 export const originalTestimonials=[

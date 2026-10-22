@@ -51,6 +51,12 @@ export const editorialPhotos=[
  {id:'show-guitarra',src:'/assets/show-guitarra.webp',alt:'Guitarrista em apresentação com iluminação vermelha',category:'shows',active:true},
  {id:'show-encontro',src:'/assets/show-encontro.webp',alt:'Artistas dividindo o palco em uma apresentação musical',category:'shows',active:true}
 ];
+function renameCampaignAcrossContent(value){
+ if(typeof value==='string')return value.replace(/black[\s-]+friday/gi,match=>match===match.toUpperCase()?'BLACK NOVEMBER':match===match.toLowerCase()?'black november':'Black November');
+ if(Array.isArray(value))return value.map(renameCampaignAcrossContent);
+ if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([key,item])=>[key,renameCampaignAcrossContent(item)]));
+ return value;
+}
 export function upgradeContent(input){
  if(!input||typeof input!=='object')return input;
  const old=Number(input.version||1)<3;
@@ -71,6 +77,6 @@ export function upgradeContent(input){
   if(next.promotion.image==='/assets/noiva-luz.webp')next.promotion.image='/assets/noiva-retrato.webp';
   if(next.texts.investmentBody?.includes('Para ensaios externos e shows'))next.texts.investmentBody='Escolha o seu momento e conheça os planos. Compare as opções com calma e vamos encontrar a cobertura que combina com a sua história.';
  }
- return {...next,version:Math.max(5,Number(next.version)||1)};
+ return renameCampaignAcrossContent({...next,version:Math.max(5,Number(next.version)||1)});
 }
 export function reorder(items,from,to){if(!Array.isArray(items)||!Number.isInteger(from)||!Number.isInteger(to)||from<0||to<0||from>=items.length||to>=items.length||from===to)return false;const [item]=items.splice(from,1);items.splice(to,0,item);return true;}

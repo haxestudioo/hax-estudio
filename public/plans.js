@@ -9,7 +9,7 @@ export function inquiryMessage(d,p,{name,date,context=''}){
   `Data desejada: ${date.split('-').reverse().join('/')}.`,
   `Plano escolhido: ${p.name}.`,
   `Investimento: ${isQuoteOnly(p)?'a combinar':money(price)}.`,
-  sale?`Quero reivindicar o desconto de ${d.promotion.discount}% da Black Friday neste pacote.`:'',
+  sale?`Quero reivindicar o desconto de ${d.promotion.discount}% da Black November neste pacote.`:'',
   'Podemos confirmar a disponibilidade e os detalhes da proposta?'
  ].filter(Boolean).join('\n');
 }
@@ -27,14 +27,14 @@ export function setupPlans(d,showDialog,{doc=document,getDate=()=>''}={}){
  function refreshForm(){
   form.elements.plan.innerHTML=list.map(p=>`<option value="${esc(p.id)}">${esc(p.name)} — ${priceLabel(p)}</option>`).join('');
   form.elements.plan.value=selected;
-  const p=current();$('#plan-form-summary').textContent=p?`${p.name} · ${priceLabel(p)}${packagePrice(p,d)!==null&&packagePrice(p,d)<p.price?' · Black Friday: '+d.promotion.discount+'% de desconto':''}`:'';
+  const p=current();$('#plan-form-summary').textContent=p?`${p.name} · ${priceLabel(p)}${packagePrice(p,d)!==null&&packagePrice(p,d)<p.price?' · Black November: '+d.promotion.discount+'% de desconto':''}`:'';
  }
  function render(){
   const recommended=featured(),p=current();
   $('#plan-choices').innerHTML=list.map(x=>`<button type="button" class="plan-choice ${x.id===selected?'is-selected':''}" data-select-plan="${esc(x.id)}" aria-pressed="${x.id===selected}"><span class="plan-choice-tag">${x===recommended?'NOSSA RECOMENDAÇÃO':isQuoteOnly(x)?'SOB MEDIDA':'O SEU MOMENTO'}</span><strong>${esc(x.name)}</strong><span>${priceLabel(x)}</span></button>`).join('');
   if(p){
    const price=packagePrice(p,d),sale=price!==null&&price<p.price;
-   $('#plan-detail').innerHTML=`<article class="plan-spotlight ${p===recommended?'recommended':''}"><div class="plan-heading"><div><span class="plan-kicker">${p===recommended?'NOSSA RECOMENDAÇÃO PARA VOCÊ':'CADA HISTÓRIA TEM O SEU PLANO'}</span><h3>${esc(p.name)}</h3><p>${esc(p.subtitle)}</p></div><div class="plan-price">${sale?`<del>${money(p.price)}</del><span class="plan-sale">BLACK FRIDAY · ${d.promotion.discount}% OFF</span>`:`<span>${isQuoteOnly(p)?'PROPOSTA PERSONALIZADA':'INVESTIMENTO'}</span>`}<strong>${priceLabel(p)}</strong></div></div><ul class="plan-features">${p.features.map(f=>`<li>${icon('check')}<span>${esc(f)}</span></li>`).join('')}</ul><details class="plan-conditions"><summary>Entrega e condições <span>+</span></summary><p>${esc(p.details)}</p></details><div class="plan-action"><span>${isQuoteOnly(p)?'Vamos construir a cobertura do seu show.':'A sua data é o começo. Vamos conversar?'}</span><button type="button" class="btn btn-dark" data-plan-inquire>Solicitar mais informações ${icon('arrow')}</button></div></article>`;
+   $('#plan-detail').innerHTML=`<article class="plan-spotlight ${p===recommended?'recommended':''}"><div class="plan-heading"><div><span class="plan-kicker">${p===recommended?'NOSSA RECOMENDAÇÃO PARA VOCÊ':'CADA HISTÓRIA TEM O SEU PLANO'}</span><h3>${esc(p.name)}</h3><p>${esc(p.subtitle)}</p></div><div class="plan-price">${sale?`<del>${money(p.price)}</del><span class="plan-sale">BLACK NOVEMBER · ${d.promotion.discount}% OFF</span>`:`<span>${isQuoteOnly(p)?'PROPOSTA PERSONALIZADA':'INVESTIMENTO'}</span>`}<strong>${priceLabel(p)}</strong></div></div><ul class="plan-features">${p.features.map(f=>`<li>${icon('check')}<span>${esc(f)}</span></li>`).join('')}</ul><details class="plan-conditions"><summary>Entrega e condições <span>+</span></summary><p>${esc(p.details)}</p></details><div class="plan-action"><span>${isQuoteOnly(p)?'Vamos construir a cobertura do seu show.':'A sua data é o começo. Vamos conversar?'}</span><button type="button" class="btn btn-dark" data-plan-inquire>Solicitar mais informações ${icon('arrow')}</button></div></article>`;
   }else{
    $('#plan-detail').innerHTML=`<div class="plans-empty"><h3>Uma proposta feita para você.</h3><p>Vamos conversar sobre a cobertura e a disponibilidade para o seu momento.</p><a class="btn btn-dark" href="${wa(d,'Olá, Leanderson! Gostaria de uma proposta para '+serviceCategories[category]+'.')}" target="_blank" rel="noopener noreferrer">Conversar no WhatsApp ${icon('whatsapp')}</a></div>`;
   }
