@@ -18,7 +18,7 @@ Atualizado em 16/11/2026. A loja é uma INCLUSÃO: site e /admin/ existentes per
 3. Abra `database/hax-fotos.sql` neste repositório, cole o conteúdo COMPLETO e execute UMA VEZ em projeto vazio. Verifique em `Table Editor` as tabelas `hax_events`, `hax_photos`, `hax_customers`, `hax_orders`, `hax_order_items`.
 4. Em `Project Settings` > `API Keys` (ou janela `Connect`), copie a chave **secret** (`sb_secret_...`) e salve em um gerenciador de senhas. NÃO use a publishable/anon key neste backend. A chave secret bypassa RLS e NUNCA deve ir para o navegador ou GitHub.
 5. Copie a URL do projeto no formato `https://xxxxx.supabase.co`. Configure as variáveis `SUPABASE_URL` e `SUPABASE_SECRET_KEY` no Netlify.
-6. Confirme que RLS está ligada nas cinco tabelas (o SQL faz isso); não crie políticas públicas. Use projeto EXCLUSIVO, pois o SQL revoga permissões anônimas em todas as tabelas da schema public.
+6. Confirme que RLS está ligada nas cinco tabelas (o SQL faz isso); não crie políticas públicas. Prefira projeto EXCLUSIVO para isolar dados, chaves e backups. O SQL restringe acesso anônimo apenas às tabelas HAX.
 7. Faça backup periódico do banco. Pedidos, itens e clientes são dados essenciais à recuperação.
 
 ## 3. Criar armazenamento Cloudflare R2
