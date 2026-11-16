@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {randomUUID,createHash} from 'node:crypto';
+import {randomUUID,createHash,createHmac} from 'node:crypto';
 
 const origin='https://www.haxestudio.com.br';
 Object.assign(process.env,{
@@ -20,7 +20,7 @@ const idEvent=randomUUID(),idPhoto=randomUUID(),idOrder=randomUUID(),idCustomer=
 const state={
  event:{id:idEvent,title:'Maratona',slug:'maratona',description:'',price_cents:1000,published:true,event_date:'2026-11-16'},
  photo:{id:idPhoto,event_id:idEvent,filename:'original.jpg',status:'ready',original_key:'originais/a/original.jpg',preview_key:'previas/a.webp'},
- customer:{id:idCustomer,name:'Cliente Teste',whatsapp:'44999999999',email:'cliente@example.com',email:'cliente@example.com'},
+ customer:{id:idCustomer,name:'Cliente Teste',whatsapp:'44999999999',email:'cliente@example.com'},
  order:null, item:null, mpStatus:'pending',mpLiveMode:true,lastPaymentPayload:null,lastOrderPayload:null
 };
 const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}});
@@ -165,4 +165,37 @@ test('admin consegue publicar evento válido e capa é atribuída automaticament
  const data=await response.json();
  assert.equal(data.event.published,true);
  assert.equal(data.event.cover_photo_id,idPhoto);
+});
+
+test('Webhook válido confirma Pix e assinatura adulterada é recusada',async()=>{
+ state.mpStatus='pending';state.mpLiveMode=true;
+ const created=await handler(req('/api/fotos/checkout',{method:'POST',body:{eventId:idEvent,photoIds:[idPhoto],name:'Cliente Teste',whatsapp:'44999999999',email:'cliente@example.com'}}));
+ assert.equal(created.status,200);
+ assert.equal(state.order.status,'pending');
+ const url=origin+'/api/fotos/webhook?type=payment&data.id=987654321';
+ const payload=JSON.stringify({type:'payment',data:{id:'987654321'}});
+ const invalid=await handler(new Request(url,{method:'POST',headers:{'Content-Type':'application/json','x-signature':'ts=12345,v1=invalid','x-request-id':'test-webhook'},body:payload}));
+ assert.equal(invalid.status,401);
+ assert.equal(state.order.status,'pending');
+ const timestamp=String(Date.now());
+ const requestId='hax-test-notification-01';
+ const manifest='id:987654321;request-id:'+requestId+';ts:'+timestamp+';';
+ const signature=createHmac('sha256',process.env.MP_WEBHOOK_SECRET).update(manifest).digest('hex');
+ state.mpStatus='approved';
+ const accepted=await handler(new Request(url,{method:'POST',headers:{'Content-Type':'application/json','x-signature':'ts='+timestamp+',v1='+signature,'x-request-id':requestId},body:payload}));
+ assert.equal(accepted.status,200);
+ assert.equal((await accepted.json()).ok,true);
+ assert.equal(state.order.status,'approved');
+});
+test('Pix da prévia envia notificação à própria prévia, não ao domínio de produção',async()=>{
+ process.env.CONTEXT='deploy-preview';
+ process.env.DEPLOY_PRIME_URL='https://deploy-preview-1--hasestudio.netlify.app';
+ try{
+  const created=await handler(req('/api/fotos/checkout',{method:'POST',body:{eventId:idEvent,photoIds:[idPhoto],name:'Cliente Teste',whatsapp:'44999999999',email:'cliente@example.com'}}));
+  assert.equal(created.status,200);
+  assert.equal(state.lastPaymentPayload.notification_url,'https://deploy-preview-1--hasestudio.netlify.app/api/fotos/webhook');
+ }finally{
+  delete process.env.CONTEXT;
+  delete process.env.DEPLOY_PRIME_URL;
+ }
 });
