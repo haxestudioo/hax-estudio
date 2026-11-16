@@ -15,9 +15,7 @@
   "dependencies": {
     "@fontsource/cormorant-garamond": "5.2.8",
     "@fontsource/manrope": "5.2.8",
-    "@netlify/blobs": "11.1.4",
-    "@aws-sdk/client-s3": "^3.900.0",
-    "@aws-sdk/s3-request-presigner": "^3.900.0"
+    "@netlify/blobs": "11.1.4"
   },
   "devDependencies": {
     "esbuild": "^0.28.2",
