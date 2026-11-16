@@ -154,8 +154,11 @@ async function handler(req){
    }catch(error){status.database={ok:false,message:String(error.message||error).slice(0,180)};}
    try {
     if(!env('R2_ACCOUNT_ID')||!env('R2_ACCESS_KEY_ID')||!env('R2_SECRET_ACCESS_KEY')||!env('R2_BUCKET'))throw Error('Variáveis do R2 ausentes');
-    const ping=await fetch(signR2('HEAD','__hax_diagnostico_nao_existe__.txt',60),{method:'HEAD',cache:'no-store'});
-    status.r2={ok:ping.status===404||ping.status===200,message:ping.status===404?'Acesso assinado aceito; arquivo de diagnóstico inexistente (esperado)':('Resposta do R2: HTTP '+ping.status)};
+    const ping=await fetch(signR2('GET','__hax_diagnostico_nao_existe__.txt',60),{method:'GET',cache:'no-store'});
+    const body=(await ping.text()).slice(0,1200);
+    const missingKey=ping.status===404&&/<Code>\s*NoSuchKey\s*<\/Code>/.test(body);
+    const ok=missingKey;
+    status.r2={ok,message:ok?'Credenciais e bucket aceitos (NoSuchKey esperado)':'Verifique R2_ACCOUNT_ID, R2_BUCKET e permissões: HTTP '+ping.status};
    }catch(error){status.r2={ok:false,message:String(error.message||error).slice(0,180)};}
    status.mercadoPago={configured:!!env('MP_ACCESS_TOKEN')&&!!env('MP_WEBHOOK_SECRET'),message:'Presença das variáveis; pagamento real não foi verificado'};
    status.notes='A configuração CORS só é comprovada com upload no navegador. O Netlify não pode ser verificado apenas pelo status do GitHub.';
