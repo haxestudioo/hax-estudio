@@ -19,7 +19,7 @@ const state={
  event:{id:idEvent,title:'Maratona',slug:'maratona',description:'',price_cents:1000,published:true,event_date:'2026-11-16'},
  photo:{id:idPhoto,event_id:idEvent,filename:'original.jpg',status:'ready',original_key:'originais/a/original.jpg',preview_key:'previas/a.webp'},
  customer:{id:idCustomer,name:'Cliente Teste',whatsapp:'44999999999',email:'cliente@example.com'},
- order:null, item:null, mpStatus:'pending'
+ order:null, item:null, mpStatus:'pending',mpLiveMode:true
 };
 const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}});
 const originalFetch=globalThis.fetch;
@@ -46,7 +46,7 @@ globalThis.fetch=async (input,options={})=>{
  }
  if(url.hostname==='api.mercadopago.com'){
   if(path==='/v1/payments'&&method==='POST')return json({id:987654321,status:'pending',live_mode:true,external_reference:idOrder,payment_method_id:'pix',transaction_amount:10,point_of_interaction:{transaction_data:{qr_code:'PIXFAKE',qr_code_base64:'cGl4'}}});
-  if(path==='/v1/payments/987654321')return json({id:987654321,status:state.mpStatus,live_mode:true,external_reference:idOrder,payment_method_id:'pix',transaction_amount:10});
+  if(path==='/v1/payments/987654321')return json({id:987654321,status:state.mpStatus,live_mode:state.mpLiveMode,external_reference:idOrder,payment_method_id:'pix',transaction_amount:10});
  }
  throw Error('Requisição não prevista: '+input);
 };
@@ -74,15 +74,18 @@ test('cliente não acessa CRM ou painel',async()=>{
  const response=await handler(req('/api/fotos/admin/dashboard'));
  assert.equal(response.status,401);
 });
-test('carrinho com foto inválida é recusado',async()=>{
- const response=await handler(req('/api/fotos/checkout',{method:'POST',body:{eventId:idEvent,photoIds:[idOther],name:'Cliente Teste',whatsapp:'44999999999',email:'cliente@example.com'}}));
- // A validação profunda de itens é feita pela função transacional do Supabase na base real.
- // O mock simplificado aceita, então a validação aqui cobre IDs de formato inválido.
+test('carrinho com identificador inválido é recusado antes do pagamento',async()=>{
  const invalid=await handler(req('/api/fotos/checkout',{method:'POST',body:{eventId:'invalido',photoIds:[idPhoto],name:'Cliente Teste',whatsapp:'44999999999',email:'cliente@example.com'}}));
  assert.equal(invalid.status,400);
 });
-test('pagamento em modo teste nunca libera originais',async()=>{
+test('pagamento em modo teste não libera originais, mesmo que o status seja aprovado',async()=>{
  state.mpStatus='pending';
- const payment=await handler(req('/api/fotos/order/'+idOrder,{token:'invalid-token-value-very-long-abc12345'}));
- assert.equal(payment.status,403);
+ const response=await handler(req('/api/fotos/checkout',{method:'POST',body:{eventId:idEvent,photoIds:[idPhoto],name:'Cliente Teste',whatsapp:'44999999999',email:'cliente@example.com'}}));
+ const {token}=await response.json();
+ state.mpStatus='approved';state.mpLiveMode=false;
+ const result=await handler(req('/api/fotos/order/'+idOrder,{token}));
+ assert.equal((await result.json()).status,'pending');
+ const forbidden=await handler(req('/api/fotos/download/'+idPhoto+'?pedido='+idOrder+'&chave='+encodeURIComponent(token)));
+ assert.equal(forbidden.status,403);
+ state.mpLiveMode=true;
 });
