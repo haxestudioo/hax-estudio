@@ -4,7 +4,7 @@ function required(name){const value=env(name);if(!value)throw Error('Configuraç
 const sha=s=>createHash('sha256').update(s).digest('hex');
 const hmac=(key,text)=>createHmac('sha256',key).update(text).digest();
 const pct=x=>encodeURIComponent(x).replace(/[!'()*]/g,c=>'%'+c.charCodeAt(0).toString(16).toUpperCase());
-function credentials(){return {account:required('R2_ACCOUNT_ID'),bucket:required('R2_BUCKET'),access:required('R2_ACCESS_KEY_ID'),secret:required('R2_SECRET_ACCESS_KEY')};}
+function credentials(){return {account:env('R2_ACCOUNT_ID')||'1ed24f2eb14f7cc0e4ccaf9ef859fd1e',bucket:env('R2_BUCKET')||'hax-fotos',access:required('R2_ACCESS_KEY_ID'),secret:required('R2_SECRET_ACCESS_KEY')};}
 export function signR2(method,key,expires=600){
  const {account,bucket,access,secret}=credentials();
  if(!['GET','PUT','HEAD'].includes(method)||!key||key.includes('..'))throw Error('Requisição de arquivo inválida.');
