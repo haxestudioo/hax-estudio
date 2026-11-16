@@ -93,7 +93,7 @@ async function handler(req){
  }
  if(kind==='event'&&req.method==='GET'){
   if(!uuid(id))throw err('Evento inválido.');
-  const event=await getEvent(id);if(!event?.published)throw err('Evento não encontrado.',404);
+  const event=await getEvent(id);if(!event||(event.published!==true&&!authenticated(req)))throw err('Evento não encontrado.',404);
   const photos=await list('hax_photos','?event_id=eq.'+q(id)+'&status=eq.ready&select=id,event_id,filename&order=created_at.asc&limit=2000');
   return json({event:publicEvent(event),photos:photos.map(publicPhoto)});
  }
@@ -184,7 +184,13 @@ async function handler(req){
   if(id==='event'&&req.method==='PATCH'){
    checkOrigin(req);const b=await req.json();if(!uuid(b.id))throw err('Evento inválido.');
    const patch={};if(typeof b.title==='string'&&safeName(b.title).length>=3)patch.title=safeName(b.title);
-   if(typeof b.published==='boolean')patch.published=b.published;
+   if(typeof b.published==='boolean'){
+    if(b.published){
+     const ready=await list('hax_photos','?event_id=eq.'+q(b.id)+'&status=eq.ready&select=id&limit=1');
+     if(!ready?.length)throw err('Envie pelo menos uma fotografia antes de publicar o evento.');
+    }
+    patch.published=b.published;
+   }
    if(typeof b.description==='string')patch.description=safeName(b.description,1000);
    if(b.price!==undefined){const cents=Math.round(Number(b.price)*100);if(!Number.isSafeInteger(cents)||cents<100||cents>10000000)throw err('Preço inválido.');patch.price_cents=cents;}
    if(b.cover_photo_id!==undefined){if(b.cover_photo_id!==null&&!uuid(b.cover_photo_id))throw err('Capa inválida.');patch.cover_photo_id=b.cover_photo_id;}
@@ -208,6 +214,8 @@ async function handler(req){
    const [orig,prev]=await Promise.all([headR2(p.original_key),headR2(p.preview_key)]);
    if(Number(orig.length)!==Number(p.size_bytes)||!Number(prev.length))throw err('Envio incompleto: tente novamente.');
    await change('hax_photos','?id=eq.'+q(p.id),{status:'ready'});
+   // A primeira fotografia recebida vira capa se o evento ainda não tiver uma.
+   await change('hax_events','?id=eq.'+q(p.event_id)+'&cover_photo_id=is.null',{cover_photo_id:p.id});
    return json({ok:true,id:p.id});
   }
   if(id==='hide-photo'&&req.method==='POST'){
