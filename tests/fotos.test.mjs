@@ -11,7 +11,6 @@ Object.assign(process.env,{
  R2_ACCESS_KEY_ID:'testaccessid',
  R2_SECRET_ACCESS_KEY:'testsecretaccesskey',
  MP_ACCESS_TOKEN:'APP_USR-fake',
- MP_PAYER_EMAIL:'operacional@example.com',
  MP_WEBHOOK_SECRET:'mock-webhook-secret',
  PUBLIC_SITE_URL:origin,
  ADMIN_PASSWORD_HASH:'test-only-not-a-valid-password-hash',
@@ -21,8 +20,8 @@ const idEvent=randomUUID(),idPhoto=randomUUID(),idOrder=randomUUID(),idCustomer=
 const state={
  event:{id:idEvent,title:'Maratona',slug:'maratona',description:'',price_cents:1000,published:true,event_date:'2026-11-16'},
  photo:{id:idPhoto,event_id:idEvent,filename:'original.jpg',status:'ready',original_key:'originais/a/original.jpg',preview_key:'previas/a.webp'},
- customer:{id:idCustomer,name:'Cliente Teste',whatsapp:'44999999999'},
- order:null, item:null, mpStatus:'pending',mpLiveMode:true,lastPaymentPayload:null
+ customer:{id:idCustomer,name:'Cliente Teste',whatsapp:'44999999999',email:'cliente@example.com',email:'cliente@example.com'},
+ order:null, item:null, mpStatus:'pending',mpLiveMode:true,lastPaymentPayload:null,lastOrderPayload:null
 };
 const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}});
 const originalFetch=globalThis.fetch;
@@ -30,6 +29,7 @@ globalThis.fetch=async (input,options={})=>{
  const url=new URL(input),path=url.pathname,method=options.method||'GET',body=options.body?JSON.parse(options.body):null;
  if(url.hostname==='example.supabase.co'){
   if(path==='/rest/v1/rpc/hax_create_order'){
+   state.lastOrderPayload=body;
    state.order={id:idOrder,customer_id:idCustomer,event_id:idEvent,total_cents:1000,status:'pending',access_hash:body.p_access_hash,created_at:new Date().toISOString()};
    state.item={order_id:idOrder,photo_id:idPhoto,original_key_snapshot:state.photo.original_key,filename_snapshot:state.photo.filename,unit_price_cents:1000};
    return json({id:idOrder,total_cents:1000});
@@ -60,10 +60,11 @@ globalThis.fetch=async (input,options={})=>{
 const {default:handler}=await import('../netlify/functions/fotos.mjs');
 const req=(route,{method='GET',body,token,originHeader=true}={})=>new Request(origin+route,{method,headers:{...(originHeader?{Origin:origin}:{}),...(token?{'x-hax-order-token':token}:{}),...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});
 test('PIX de produção: seleção → pedido pendente → bloqueio → aprovação → original',async()=>{
- const response=await handler(req('/api/fotos/checkout',{method:'POST',body:{eventId:idEvent,photoIds:[idPhoto],name:'Cliente Teste',whatsapp:'(44) 99999-9999'}}));
+ const response=await handler(req('/api/fotos/checkout',{method:'POST',body:{eventId:idEvent,photoIds:[idPhoto],name:'Cliente Teste',whatsapp:'(44) 99999-9999',email:'cliente@example.com'}}));
  assert.equal(response.status,200);const created=await response.json();
  assert.equal(created.orderId,idOrder);assert.equal(created.pix_code,'PIXFAKE');
- assert.equal(state.lastPaymentPayload.payer.email,'operacional@example.com');
+ assert.equal(state.lastPaymentPayload.payer.email,'cliente@example.com');
+ assert.equal(state.lastOrderPayload.p_email,'cliente@example.com');
  assert.equal(Object.hasOwn(state.lastPaymentPayload.payer,'whatsapp'),false);
  assert.ok(created.token.length>32);
  const before=await handler(req('/api/fotos/order/'+idOrder,{token:created.token}));
@@ -79,17 +80,24 @@ test('PIX de produção: seleção → pedido pendente → bloqueio → aprovaç
  assert.equal(original.status,302);assert.match(original.headers.get('Location'),/r2\.cloudflarestorage\.com/);
  assert.match(original.headers.get('Location'),/X-Amz-Signature=/);
 });
+test('checkout recusa e-mail inválido antes de criar pagamento',async()=>{
+ const before=state.lastPaymentPayload;
+ const invalid=await handler(req('/api/fotos/checkout',{method:'POST',body:{eventId:idEvent,photoIds:[idPhoto],name:'Cliente Teste',whatsapp:'44999999999',email:'email-invalido'}}));
+ assert.equal(invalid.status,400);
+ assert.match((await invalid.json()).error,/e-mail/);
+ assert.equal(state.lastPaymentPayload,before);
+});
 test('cliente não acessa CRM ou painel',async()=>{
  const response=await handler(req('/api/fotos/admin/dashboard'));
  assert.equal(response.status,401);
 });
 test('carrinho com identificador inválido é recusado antes do pagamento',async()=>{
- const invalid=await handler(req('/api/fotos/checkout',{method:'POST',body:{eventId:'invalido',photoIds:[idPhoto],name:'Cliente Teste',whatsapp:'44999999999'}}));
+ const invalid=await handler(req('/api/fotos/checkout',{method:'POST',body:{eventId:'invalido',photoIds:[idPhoto],name:'Cliente Teste',whatsapp:'44999999999',email:'cliente@example.com'}}));
  assert.equal(invalid.status,400);
 });
 test('pagamento em modo teste não libera originais, mesmo que o status seja aprovado',async()=>{
  state.mpStatus='pending';
- const response=await handler(req('/api/fotos/checkout',{method:'POST',body:{eventId:idEvent,photoIds:[idPhoto],name:'Cliente Teste',whatsapp:'44999999999'}}));
+ const response=await handler(req('/api/fotos/checkout',{method:'POST',body:{eventId:idEvent,photoIds:[idPhoto],name:'Cliente Teste',whatsapp:'44999999999',email:'cliente@example.com'}}));
  const {token}=await response.json();
  state.mpStatus='approved';state.mpLiveMode=false;
  const result=await handler(req('/api/fotos/order/'+idOrder,{token}));
