@@ -33,7 +33,10 @@ globalThis.fetch=async (input,options={})=>{
    state.item={order_id:idOrder,photo_id:idPhoto,original_key_snapshot:state.photo.original_key,filename_snapshot:state.photo.filename,unit_price_cents:1000};
    return json({id:idOrder,total_cents:1000});
   }
-  if(path==='/rest/v1/hax_events')return json([state.event]);
+  if(path==='/rest/v1/hax_events'){
+   if(method==='PATCH'){Object.assign(state.event,body);return json([state.event]);}
+   return json(url.searchParams.get('published')==='eq.true'&&!state.event.published?[]:[state.event]);
+  }
   if(path==='/rest/v1/hax_photos')return json([state.photo]);
   if(path==='/rest/v1/hax_customers'){
    if(method==='PATCH'){Object.assign(state.customer,body);return json([state.customer]);}
@@ -122,4 +125,33 @@ test('diagnóstico autenticado consulta Supabase e Cloudflare sem expor tokens',
  assert.equal(body.mercadoPago.configured,true);
  assert.equal(JSON.stringify(body).includes('sb_secret_mock_safe_test_key'),false);
  assert.equal(JSON.stringify(body).includes('testsecretaccesskey'),false);
+});
+
+test('evento rascunho fica oculto ao público e disponível em prévia autenticada',async()=>{
+ const {sessionToken}=await import('../netlify/lib/security.mjs');
+ state.event.published=false;
+ try{
+  const list=await handler(req('/api/fotos/events'));
+  assert.equal(list.status,200);
+  assert.equal((await list.json()).events.length,0);
+  const denied=await handler(req('/api/fotos/event/'+idEvent));
+  assert.equal(denied.status,404);
+  const draft=await handler(new Request(origin+'/api/fotos/event/'+idEvent,{headers:{Cookie:'hax_session='+sessionToken()}}));
+  assert.equal(draft.status,200);
+  const data=await draft.json();
+  assert.equal(data.event.preview_only,true);
+  assert.equal(data.photos.length,1);
+ }finally{state.event.published=true;}
+});
+test('admin consegue publicar evento válido e capa é atribuída automaticamente',async()=>{
+ const {sessionToken}=await import('../netlify/lib/security.mjs');
+ state.event.published=false;state.event.cover_photo_id=null;
+ const response=await handler(new Request(origin+'/api/fotos/admin/event',{
+  method:'PATCH',headers:{Cookie:'hax_session='+sessionToken(),Origin:origin,'Content-Type':'application/json'},
+  body:JSON.stringify({id:idEvent,published:true})
+ }));
+ assert.equal(response.status,200);
+ const data=await response.json();
+ assert.equal(data.event.published,true);
+ assert.equal(data.event.cover_photo_id,idPhoto);
 });
