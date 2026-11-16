@@ -1,6 +1,5 @@
 import {randomUUID,randomBytes,createHash,createHmac,timingSafeEqual} from 'node:crypto';
-import {S3Client,PutObjectCommand,GetObjectCommand,HeadObjectCommand,DeleteObjectCommand} from '@aws-sdk/client-s3';
-import {getSignedUrl} from '@aws-sdk/s3-request-presigner';
+import {signR2,headR2,readR2} from '../lib/r2.mjs';
 import {authenticated,sameOrigin,json,env} from '../lib/security.mjs';
 
 const hash=x=>createHash('sha256').update(x).digest('hex');
@@ -17,7 +16,6 @@ const q=(v)=>encodeURIComponent(v);
 const list=(t,query)=>db(t,{query});
 const single=async(t,query)=>{const a=await list(t,query+'&limit=1');return a?.[0]||null;};
 const change=(t,where,body)=>db(t,{method:'PATCH',query:where,body,headers:{Prefer:'return=representation'}});
-function r2(){const account=required('R2_ACCOUNT_ID'),bucket=required('R2_BUCKET'),client=new S3Client({region:'auto',endpoint:'https://'+account+'.r2.cloudflarestorage.com',credentials:{accessKeyId:required('R2_ACCESS_KEY_ID'),secretAccessKey:required('R2_SECRET_ACCESS_KEY')}});return {bucket,client};}
 function okAdmin(req){if(!authenticated(req))throw err('Entre no painel.',401);if(!sameOrigin(req))throw err('Origem não autorizada.',403);}
 function checkOrigin(req){if(!sameOrigin(req))throw err('Origem não autorizada.',403);}
 const uuid=x=>/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x||'');
@@ -69,9 +67,8 @@ async function checkOrderPayment(order){
  try{return await syncPayment(order,await getPayment(order.payment_id));}catch(e){console.error('Payment reconcile',e.message);return order;}
 }
 async function serveR2(key,type,name,download=false){
- const {client,bucket}=r2();
- const obj=await client.send(new GetObjectCommand({Bucket:bucket,Key:key}));
- const stream=obj.Body?.transformToWebStream?.();
+ const obj=await readR2(key);
+ const stream=obj.body;
  if(!stream)throw err('Arquivo não disponível.',404);
  const h={...noCache,'Content-Type':type||'application/octet-stream'};
  if(download)h['Content-Disposition']='attachment; filename*=UTF-8\'\''+encodeURIComponent(name||'foto.jpg');
@@ -180,20 +177,15 @@ async function handler(req){
    const filename=safeName(b.filename,180),size=Number(b.size),type=String(b.type||'');
    if(!/\.(jpe?g|png|webp)$/i.test(filename)||!['image/jpeg','image/png','image/webp'].includes(type)||!Number.isFinite(size)||size<100||size>70*1024*1024)throw err('Use fotos JPG/PNG/WebP de até 70 MB.');
    const photoId=randomUUID(),original='originais/'+event.id+'/'+photoId+'/'+filename.replace(/[^a-zA-Z0-9._-]/g,'_'),preview='previas/'+event.id+'/'+photoId+'.webp';
-   const {client,bucket}=r2();
-   const [originalUrl,previewUrl]=await Promise.all([
-    getSignedUrl(client,new PutObjectCommand({Bucket:bucket,Key:original,ContentType:type}),{expiresIn:900}),
-    getSignedUrl(client,new PutObjectCommand({Bucket:bucket,Key:preview,ContentType:'image/webp'}),{expiresIn:900})
-   ]);
+   const originalUrl=signR2('PUT',original,900),previewUrl=signR2('PUT',preview,900);
    await db('hax_photos',{method:'POST',body:{id:photoId,event_id:event.id,original_key:original,preview_key:preview,filename,mime_type:type,size_bytes:size},headers:{Prefer:'return=minimal'}});
    return json({photoId,originalUrl,previewUrl});
   }
   if(id==='finish-upload'&&req.method==='POST'){
    checkOrigin(req);const b=await req.json();const p=await single('hax_photos','?id=eq.'+q(b.photoId)+'&select=*');
    if(!p)throw err('Foto inexistente.',404);
-   const {client,bucket}=r2();
-   const [orig,prev]=await Promise.all([client.send(new HeadObjectCommand({Bucket:bucket,Key:p.original_key})),client.send(new HeadObjectCommand({Bucket:bucket,Key:p.preview_key}))]);
-   if(Number(orig.ContentLength)!==Number(p.size_bytes)||!Number(prev.ContentLength))throw err('Envio incompleto: tente novamente.');
+   const [orig,prev]=await Promise.all([headR2(p.original_key),headR2(p.preview_key)]);
+   if(Number(orig.length)!==Number(p.size_bytes)||!Number(prev.length))throw err('Envio incompleto: tente novamente.');
    await change('hax_photos','?id=eq.'+q(p.id),{status:'ready'});
    return json({ok:true,id:p.id});
   }
