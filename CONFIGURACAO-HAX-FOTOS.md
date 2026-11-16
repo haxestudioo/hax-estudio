@@ -1,4 +1,4 @@
-# HAX Fotos — configuração de produção (branch teste)
+# HAX Fotos — configuração de produção (branch teste
 Atualizado em 16/11/2026. A loja é uma INCLUSÃO: site e /admin/ existentes permanecem ativos.
 
 ## 1. O que está implementado
