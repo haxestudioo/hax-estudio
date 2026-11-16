@@ -1,10 +1,7 @@
 [build]
   command = "npm run build"
   publish = "dist"
-  # Não construir a branch teste automaticamente: mantém o último deploy existente.
-  # Atenção: o projeto Netlify está usando teste como branch de produção.
-  # Exit 0 cancela o build; exit 1 mantém builds normais das outras branches.
-  ignore = 'if [ "${BRANCH:-}" = "teste" ]; then exit 0; else exit 1; fi'
+  # Deploy de produção habilitado. Após migração, a branch de produção deve ser main.
 [build.environment]
   NODE_VERSION = "22"
 [functions]
@@ -27,6 +24,15 @@
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=2592000"
+# URLs canônicas das páginas públicas.
+[[redirects]]
+  from = "/fotos"
+  to = "/fotos/"
+  status = 301
+[[redirects]]
+  from = "/admin"
+  to = "/admin/"
+  status = 301
 [dev]
   publish = "dist"
   port = 8888
