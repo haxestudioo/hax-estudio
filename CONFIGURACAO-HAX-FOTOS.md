@@ -80,6 +80,7 @@ Mantenha `ADMIN_PASSWORD_HASH`, `ADMIN_SESSION_SECRET`, `SITE_URL` e demais vari
 2. Netlify > `Project configuration` > `Continuous deployment` > `Branches and deploy contexts`: habilite `Branch deploys` para `teste`. Se a branch não for publicada automaticamente, esta opção é necessária.
 3. A URL de branch geralmente fica `https://teste--NOME-DO-SITE.netlify.app` (verifique no painel). Adicione a origem exata à política CORS do R2.
 4. Para evitar Pix real em domínio de prévia indevidamente indexado, proteja a prévia com senha/Netlify Access e não divulgue.
+   **Webhook em branch:** configure `PUBLIC_SITE_URL` com escopo de deploy `branch:teste` e valor da URL HTTPS exata da branch. Mantenha a variável de produção com o domínio principal. O Pix criado pela branch envia seu webhook à própria branch. Se houver proteção por senha, crie uma exceção para `/api/fotos/webhook` sem tornar o painel público, caso contrário as notificações serão bloqueadas; a consulta ao Mercado Pago ainda pode reconciliar o status.
 5. Netlify compila com `npm run build` e publica `dist`. Os arquivos de `public/fotos/` são copiados automaticamente pelo script existente.
 6. Acesse `/admin/`, faça login habitual, abra `Venda de Fotos`; crie evento em rascunho, faça upload de fotos e coloque capa. Ative `PUBLICAR`.
 7. Acesse `/fotos/`, selecione fotos, informe nome, WhatsApp, e-mail, gere Pix e verifique status. O URL do pedido pode ser copiado para retorno.
