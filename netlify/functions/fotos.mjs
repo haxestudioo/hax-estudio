@@ -114,7 +114,7 @@ async function handler(req){
   const token=randomBytes(32).toString('base64url');
   const created=await db('rpc/hax_create_order',{method:'POST',body:{p_event_id:eventId,p_photo_ids:ids,p_name:name,p_whatsapp:whatsapp,p_email:email,p_access_hash:hash(token)}});
   const orderId=created.id;
-  const mpr=await fetch('https://api.mercadopago.com/v1/payments',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+required('MP_ACCESS_TOKEN'),'X-Idempotency-Key':orderId},body:JSON.stringify({transaction_amount:created.total_cents/100,description:'HAX Fotos - Pedido '+orderId.slice(0,8),payment_method_id:'pix',external_reference:orderId,payer:{email,first_name:name},notification_url:required('PUBLIC_SITE_URL').replace(/\/$/,'')+'/api/fotos/webhook'})});
+  const mpr=await fetch('https://api.mercadopago.com/v1/payments',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+required('MP_ACCESS_TOKEN'),'X-Idempotency-Key':orderId},body:JSON.stringify({transaction_amount:created.total_cents/100,description:'HAX Fotos - Pedido '+orderId.slice(0,8),payment_method_id:'pix',external_reference:orderId,payer:{email,first_name:name},notification_url:(env('PUBLIC_SITE_URL')||'https://haxestudio.com.br').replace(/\/$/,'')+'/api/fotos/webhook'})});
   const payment=await mpr.json();
   if(!mpr.ok||!payment.id){console.error('MP create failed',mpr.status,JSON.stringify(payment).slice(0,800));throw err('O Pix não pôde ser gerado. Nenhuma foto foi liberada; tente novamente.',502);}
   const qr=payment.point_of_interaction?.transaction_data||{};
@@ -153,7 +153,7 @@ async function handler(req){
     status.database={ok:true,message:'Conexão e tabela hax_events disponíveis'};
    }catch(error){status.database={ok:false,message:String(error.message||error).slice(0,180)};}
    try {
-    if(!env('R2_ACCOUNT_ID')||!env('R2_ACCESS_KEY_ID')||!env('R2_SECRET_ACCESS_KEY')||!env('R2_BUCKET'))throw Error('Variáveis do R2 ausentes');
+    if(!env('R2_ACCESS_KEY_ID')||!env('R2_SECRET_ACCESS_KEY'))throw Error('Credenciais secretas de acesso ao R2 ausentes');
     const ping=await fetch(signR2('GET','__hax_diagnostico_nao_existe__.txt',60),{method:'GET',cache:'no-store'});
     const body=(await ping.text()).slice(0,1200);
     const missingKey=ping.status===404&&/<Code>\s*NoSuchKey\s*<\/Code>/.test(body);
