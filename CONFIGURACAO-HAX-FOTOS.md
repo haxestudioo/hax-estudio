@@ -4,7 +4,7 @@ Atualizado em 16/11/2026. A loja é uma INCLUSÃO: site e /admin/ existentes per
 ## 1. O que está implementado
 - Loja separada em `/fotos/`, responsiva, tema esportivo escuro, navegação e entrada animada.
 - Eventos e galerias, zoom de prévia, seleção múltipla, sacola persistente por evento no navegador.
-- Página de checkout com nome, WhatsApp e e-mail (e-mail é exigido pelo Mercado Pago para Pix).
+- Página de checkout solicita apenas nome e WhatsApp. A API Pix do Mercado Pago ainda exige `payer.email`, que precisa de configuração específica do vendedor e validação com o provedor.
 - Pix exclusivamente: QR Code e Pix copia e cola. Status sempre consultado no Mercado Pago, não confiando em alterações do navegador.
 - Webhook assinado; pedido privado reaberto via link com token secreto salvo localmente. Fotos originais liberadas SÓ após status aprovado.
 - Admin já existente ganha aba `Venda de Fotos`: cadastro de eventos, preços, upload múltiplo dos originais, capas, publicar/ocultar, resumo de vendas, pedidos, CRM, conferência de pagamentos e download administrativo para correção manual.
@@ -77,6 +77,7 @@ A integração GitHub não permite ver as variáveis secretas, os logs internos 
 1. Entre em https://www.mercadopago.com.br/developers/panel/applications e crie/abra uma aplicação do vendedor **real**.
 2. Habilite Pix no seu cadastro, conforme os requisitos atuais do Mercado Pago. Confira a titularidade e habilitação para receber pagamentos.
 3. Em Credenciais de PRODUÇÃO, copie o Access Token de produção, começando por `APP_USR-`; defina `MP_ACCESS_TOKEN` no Netlify. Não compartilhe o token e não coloque em arquivos do GitHub.
+3a. Como a loja não pede e-mail do comprador, configure `MP_PAYER_EMAIL` com um endereço operacional válido e sob controle do vendedor (não um endereço inventado). **O Mercado Pago documenta `payer.email` como e-mail do comprador obrigatório. Consulte o suporte/compliance do Mercado Pago e valide uma compra real controlada para saber se um contato operacional é permitido nesse modelo. Se não for, será preciso ajustar o fluxo ou escolher outro provedor, em vez de atribuir um e-mail incorreto ao comprador.**
 4. Em Webhooks da aplicação, cadastre a URL de produção `https://www.haxestudio.com.br/api/fotos/webhook` (ajuste para domínio canônico real); habilite notificações do tópico **Pagamentos** (payment).
 5. Copie a chave secreta da assinatura do Webhook para `MP_WEBHOOK_SECRET` no Netlify.
 6. Defina `PUBLIC_SITE_URL=https://www.haxestudio.com.br` (domínio EXATO com HTTPS e sem barra final). Este endereço é usado para o callback do Pix.
@@ -94,6 +95,7 @@ Em https://app.netlify.com > seu projeto > `Project configuration` > `Environmen
 - `R2_ACCESS_KEY_ID`: Access Key R2
 - `R2_SECRET_ACCESS_KEY`: Secret Key R2
 - `MP_ACCESS_TOKEN`: chave REAL `APP_USR-...`
+- `MP_PAYER_EMAIL`: contato operacional autorizado (ver ressalva acima)
 - `MP_WEBHOOK_SECRET`: assinatura secreta Webhooks
 - `MP_REQUIRE_LIVE`: `true`
 
@@ -107,7 +109,7 @@ Mantenha `ADMIN_PASSWORD_HASH`, `ADMIN_SESSION_SECRET`, `SITE_URL` e demais vari
    **Webhook em branch:** configure `PUBLIC_SITE_URL` com escopo de deploy `branch:teste` e valor da URL HTTPS exata da branch. Mantenha a variável de produção com o domínio principal. O Pix criado pela branch envia seu webhook à própria branch. Se houver proteção por senha, crie uma exceção para `/api/fotos/webhook` sem tornar o painel público, caso contrário as notificações serão bloqueadas; a consulta ao Mercado Pago ainda pode reconciliar o status.
 5. Netlify compila com `npm run build` e publica `dist`. Os arquivos de `public/fotos/` são copiados automaticamente pelo script existente.
 6. Acesse `/admin/`, faça login habitual, abra `Venda de Fotos`; crie evento em rascunho, faça upload de fotos e coloque capa. Ative `PUBLICAR`.
-7. Acesse `/fotos/`, selecione fotos, informe nome, WhatsApp, e-mail, gere Pix e verifique status. O URL do pedido pode ser copiado para retorno.
+7. Acesse `/fotos/`, selecione fotos, informe nome e WhatsApp, gere Pix e verifique o status. O URL do pedido pode ser copiado para retorno. Antes, valide com o Mercado Pago a exigência de `payer.email`.
 8. No admin, confirme que cliente, nome, WhatsApp, pedido, status do pagamento e relação imutável das fotos aparecem. Teste o download do original (tamanho e resolução), após Pix aprovado.
 9. Após validar, abra PR da `teste` para `main`, revise e só então faça o merge. A `main` de produção não deve ser alterada antes disso.
 
@@ -130,8 +132,16 @@ Mantenha `ADMIN_PASSWORD_HASH`, `ADMIN_SESSION_SECRET`, `SITE_URL` e demais vari
 - Sem chaves reais, buckets e banco criados, a plataforma **não está operacional**. Não considerar pronta para venda até validar o checklist.
 - O upload gera prévia no navegador (processamento sequencial); imagens muito grandes exigem memória suficiente. JPG de 70 MB pode falhar em celulares antigos; nesses casos usar computador.
 - Como toda solução real de pagamentos, pode ocorrer indisponibilidade de API; pedidos e seleção são armazenados para recuperação, mas exigem monitoramento operacional, backup e reconciliação.
-- O Pix é emitido em BRL, e o site exige e-mail porque a API Pix do Mercado Pago solicita `payer.email`.
+- O Pix é emitido em BRL. O formulário do comprador pede apenas nome e WhatsApp. A API Pix do Mercado Pago exige `payer.email`; não atribua um endereço fictício ao comprador. A integração usa `MP_PAYER_EMAIL` configurado pelo operador, mas é necessário confirmar com o Mercado Pago se isso é permitido e aceito para esse fluxo antes de realizar vendas reais.
 - Para recuperação em outro dispositivo, copiar o link do pedido. O token é secreto: não publicar links de pedidos nem incluí-los em analytics, mensagens públicas ou capturas de tela.
 - Nunca elimine originais do R2 já vendidos sem um plano de retenção e backup.
 
 Documentação oficial: https://developers.cloudflare.com/r2/buckets/cors/ , https://supabase.com/docs/guides/api/creating-routes , https://www.mercadopago.com.br/developers/pt/docs/checkout-api-payments/integration-configuration/integrate-pix , https://www.mercadopago.com.br/developers/pt/docs/your-integrations/notifications/webhooks
+
+## Atualização da interface mobile (16/11/2026)
+- Cabeçalho HAXFOTOS volta para `/fotos/`.
+- Chamada principal: **ENCONTRE SUA FOTO!**. Botões principais sem ícones de seta.
+- Busca agora filtra apenas **eventos**, não nomes ou números dos arquivos fotográficos.
+- Fotografia aberta em visualizador de tela cheia com setas e gesto de deslizar; retratos preenchem a tela mobile mantendo a proporção (podendo cortar bordas laterais), fotografias horizontais ficam inteiras com fundo desfocado. Sem rolagem lateral da página.
+- Checkout pede **nome e WhatsApp**; os registros de clientes e pedidos ficam associados ao WhatsApp. **Integração Pix real depende da restrição `payer.email` descrita acima e das credenciais de produção.**
+- Alterações somente na branch `teste-upload-preview`, sem modificar `main`.
