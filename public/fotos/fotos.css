@@ -56,3 +56,6 @@ main,.section,.hero,.top,.event-grid,.photo-grid,.tile{min-width:0;max-width:100
  .event-search{max-width:100%}
  .event-grid{grid-template-columns:minmax(0,1fr)}
 }
+
+/* Retratos ocupam a altura do celular sem deformar; paisagens permanecem inteiras. */
+@media(max-width:650px){.photo-viewer.is-portrait #large-photo{object-fit:cover!important}.photo-viewer:not(.is-portrait) #large-photo{object-fit:contain!important}}
