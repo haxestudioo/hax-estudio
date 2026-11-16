@@ -87,4 +87,4 @@ $('#buyer').onsubmit=buyerSubmit;$('#recover').onclick=recover;$('#copy-link').o
 $('#copy').onclick=()=>navigator.clipboard.writeText($('#pix-code').value).then(()=>notify('Código Pix copiado!'),()=>notify('Selecione o código e copie manualmente.'));
 $('#back').onclick=()=>{event=null;selected.clear();$('#gallery').classList.add('hidden');$('#events').closest('section').classList.remove('hidden');updateCart();history.replaceState({},'',location.pathname+'#eventos');$('#events').scrollIntoView();};
 $('#checkout').addEventListener('close',()=>{if(order)startPolling();});window.addEventListener('focus',()=>{if(order)refreshOrder().catch(()=>{});});
-const params=new URLSearchParams(location.search);if(params.get('pedido')&&params.get('chave'))resume(params.get('pedido'),params.get('chave'));else{const id=location.hash.match(/evento=([0-9a-f-]+)/)?.[1];if(id)loadEvents().then(()=>openEvent(id));else loadEvents();}
+const params=new URLSearchParams(location.search);loadEvents().then(()=>{if(params.get('pedido')&&params.get('chave'))resume(params.get('pedido'),params.get('chave'));else{const id=location.hash.match(/evento=([0-9a-f-]+)/)?.[1];if(id)openEvent(id);}});
