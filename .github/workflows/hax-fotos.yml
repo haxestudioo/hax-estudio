@@ -1,7 +1,7 @@
-name: HAX Fotos - verificacao branch teste
+name: HAX Fotos - build e verificacao
 on:
   push:
-    branches: [teste, teste-upload-preview]
+    branches: [main, teste, teste-upload-preview]
   pull_request:
     branches: [main, teste]
 permissions:
