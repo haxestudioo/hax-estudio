@@ -1,4 +1,4 @@
-# HAX Fotos — configuração de produção (branch teste
+# HAX Fotos — configuração de produção (branch main)
 Atualizado em 16/11/2026. A loja é uma INCLUSÃO: site e /admin/ existentes permanecem ativos.
 
 ## 1. O que está implementado
@@ -33,7 +33,7 @@ Atualizado em 16/11/2026. A loja é uma INCLUSÃO: site e /admin/ existentes per
 [
   {
     "AllowedOrigins": [
-      "https://www.haxestudio.com.br",
+      "https://haxestudio.com.br",
       "https://haxestudio.com.br",
       "https://SEU-BRANCH-DEPLOY.netlify.app"
     ],
@@ -53,10 +53,10 @@ Atualizado em 16/11/2026. A loja é uma INCLUSÃO: site e /admin/ existentes per
 O painel foi atualizado para usar EXATAMENTE o arquivo de marca d'água personalizado do estúdio, em vez de texto gerado por código.
 Como o GitHub atual só está disponível nesta integração para envio de arquivos textuais, o arquivo PNG binário precisa ser enviado uma vez pela interface GitHub:
 1. Baixe o arquivo `marca-dagua.png` preparado a partir do PNG original anexado à conversa com o ChatGPT.
-2. No repositório `haxestudioo/hax-estudio`, selecione a branch `teste`, abra a pasta `public/fotos/`.
+2. No repositório `haxestudioo/hax-estudio`, abra a branch `main` e confira `public/fotos/`.
 3. Escolha `Add file` > `Upload files`, envie o PNG com o nome **exato** `marca-dagua.png`.
 4. Confirme o commit diretamente em `teste` (NÃO na `main`). Espere o deploy da branch ficar pronto.
-5. No endereço da branch, verifique `/fotos/marca-dagua.png`. O navegador deve exibir o PNG translúcido; não uma página 404.
+5. No domínio oficial, verifique `/fotos/marca-dagua.png`. O navegador deve exibir o PNG translúcido; não uma página 404.
 6. No painel `/admin/` > `Venda de Fotos`, clique em `VERIFICAR CONEXÕES`. O indicador `Arquivo da marca d'água` deve aparecer OK.
 7. Somente depois envie novas fotografias. O upload é interrompido se a marca personalizada não estiver disponível. As prévias anteriores feitas com marca por texto não são alteradas automaticamente; para substituí-las, é preciso novo upload das fotografias, preservando pedidos já vendidos.
 
@@ -78,16 +78,16 @@ A integração GitHub não permite ver as variáveis secretas, os logs internos 
 2. Habilite Pix no seu cadastro, conforme os requisitos atuais do Mercado Pago. Confira a titularidade e habilitação para receber pagamentos.
 3. Em Credenciais de PRODUÇÃO, copie o Access Token de produção, começando por `APP_USR-`; defina `MP_ACCESS_TOKEN` no Netlify. Não compartilhe o token e não coloque em arquivos do GitHub.
 3a. O cliente informa seu próprio e-mail no formulário. O backend valida e envia esse endereço como `payer.email` ao Mercado Pago e registra o mesmo e-mail junto ao pedido e no CRM.
-4. Em Webhooks da aplicação, cadastre a URL de produção `https://www.haxestudio.com.br/api/fotos/webhook` (ajuste para domínio canônico real); habilite notificações do tópico **Pagamentos** (payment).
+4. Em Webhooks da aplicação, cadastre a URL de produção `https://haxestudio.com.br/api/fotos/webhook` (ajuste para domínio canônico real); habilite notificações do tópico **Pagamentos** (payment).
 5. Copie a chave secreta da assinatura do Webhook para `MP_WEBHOOK_SECRET` no Netlify.
-6. Defina `PUBLIC_SITE_URL=https://www.haxestudio.com.br` (domínio EXATO com HTTPS e sem barra final). Este endereço é usado para o callback do Pix.
+6. Defina `PUBLIC_SITE_URL=https://haxestudio.com.br` (domínio EXATO com HTTPS e sem barra final). Este endereço é usado para o callback do Pix.
 7. Não é necessário `MP_REQUIRE_LIVE`: o servidor exige `live_mode=true` no código e libera os originais apenas após consultar o Mercado Pago e verificar o pedido, o valor e o método Pix.
 8. PIX é o único método implementado. Não há opção cartão, boleto ou pagamento manual no checkout.
 9. A confirmação depende do provedor e rede. É OBRIGATÓRIO fazer uma compra real controlada de baixo valor antes de anunciar o sistema ao público. Não há como garantir uma integração financeira sem validar a credencial e o webhook reais. Você pode realizar a verificação com uma pequena compra real e conferir o recebimento/estorno pela sua conta, sem usar credenciais de teste.
 
 ## 5. Variáveis no Netlify
 Em https://app.netlify.com > seu projeto > `Project configuration` > `Environment variables`, crie:
-- `PUBLIC_SITE_URL`: `https://www.haxestudio.com.br` (ou domínio final canônico)
+- `PUBLIC_SITE_URL`: `https://haxestudio.com.br` (ou domínio final canônico)
 - `SUPABASE_URL`: URL do projeto
 - `SUPABASE_SECRET_KEY`: `sb_secret_...` (apenas servidor)
 - `R2_ACCOUNT_ID`: ID da conta Cloudflare
@@ -152,3 +152,12 @@ Documentação oficial: https://developers.cloudflare.com/r2/buckets/cors/ , htt
 - Fotografia aberta em visualizador de tela cheia com setas e gesto de deslizar; retratos preenchem a tela mobile mantendo a proporção (podendo cortar bordas laterais), fotografias horizontais ficam inteiras com fundo desfocado. Sem rolagem lateral da página.
 - Checkout pede **nome, WhatsApp e e-mail**; o CRM registra esses dados para suporte a pedidos. A liberação dos originais continua condicionada à confirmação do Pix.
 - Alterações somente na branch `teste-upload-preview`, sem modificar `main`.
+
+## Publicação oficial da HAX Fotos — 16/11/2026
+- Site e canônico: `https://haxestudio.com.br/`.
+- Loja de fotos: `https://haxestudio.com.br/fotos/`.
+- Painel de gestão: `https://haxestudio.com.br/admin/`.
+- Webhook de produção: `https://haxestudio.com.br/api/fotos/webhook`.
+- Variáveis Netlify: `SITE_URL` e `PUBLIC_SITE_URL` devem ser `https://haxestudio.com.br` (sem barra final).
+- Branch canônica no GitHub: `main`. Ajustar a **Production branch** do projeto Netlify para `main` no painel assim que possível, pois anteriormente o projeto usava `teste`.
+- O deploy deve incluir a marca d'água em `public/fotos/marca-dagua.png` e o backend Pix nas Netlify Functions.
