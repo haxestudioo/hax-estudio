@@ -16,7 +16,7 @@ const q=(v)=>encodeURIComponent(v);
 const list=(t,query)=>db(t,{query});
 const single=async(t,query)=>{const a=await list(t,query+'&limit=1');return a?.[0]||null;};
 const change=(t,where,body)=>db(t,{method:'PATCH',query:where,body,headers:{Prefer:'return=representation'}});
-function okAdmin(req){if(!authenticated(req))throw err('Entre no painel.',401);if(!sameOrigin(req))throw err('Origem não autorizada.',403);}
+function okAdmin(req){if(!authenticated(req))throw err('Entre no painel.',401);if(!['GET','HEAD'].includes(req.method)&&!sameOrigin(req))throw err('Origem não autorizada.',403);}
 function checkOrigin(req){if(!sameOrigin(req))throw err('Origem não autorizada.',403);}
 const uuid=x=>/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x||'');
 const noCache={'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'};
