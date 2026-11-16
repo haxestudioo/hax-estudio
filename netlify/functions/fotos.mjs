@@ -95,7 +95,7 @@ async function handler(req){
   if(!uuid(id))throw err('Evento inválido.');
   const event=await getEvent(id);if(!event||(event.published!==true&&!authenticated(req)))throw err('Evento não encontrado.',404);
   const photos=await list('hax_photos','?event_id=eq.'+q(id)+'&status=eq.ready&select=id,event_id,filename&order=created_at.asc&limit=2000');
-  return json({event:publicEvent(event),photos:photos.map(publicPhoto)});
+  return json({event:{...publicEvent(event),preview_only:!event.published},photos:photos.map(publicPhoto)});
  }
  if(kind==='preview'&&req.method==='GET'){
   if(!uuid(id))throw err('Imagem inválida.',404);
