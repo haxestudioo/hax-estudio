@@ -144,6 +144,23 @@ async function handler(req){
  }
  if(kind==='admin'){
   okAdmin(req);
+  if(id==='diagnostics'&&req.method==='GET'){
+   // Somente o admin autenticado. Nunca retornar segredos ou chaves.
+   const status={deployContext:env('CONTEXT')||'não informado',database:{ok:false},r2:{ok:false},watermark:{publicPath:'/fotos/marca-dagua.png',note:'Verificar publicação do arquivo na branch'}};
+   try {
+    if(!env('SUPABASE_URL')||!(env('SUPABASE_SECRET_KEY')||env('SUPABASE_SERVICE_ROLE_KEY')))throw Error('Variáveis SUPABASE_URL e/ou SUPABASE_SECRET_KEY ausentes');
+    await list('hax_events','?select=id&limit=1');
+    status.database={ok:true,message:'Conexão e tabela hax_events disponíveis'};
+   }catch(error){status.database={ok:false,message:String(error.message||error).slice(0,180)};}
+   try {
+    if(!env('R2_ACCOUNT_ID')||!env('R2_ACCESS_KEY_ID')||!env('R2_SECRET_ACCESS_KEY')||!env('R2_BUCKET'))throw Error('Variáveis do R2 ausentes');
+    const ping=await fetch(signR2('HEAD','__hax_diagnostico_nao_existe__.txt',60),{method:'HEAD',cache:'no-store'});
+    status.r2={ok:ping.status===404||ping.status===200,message:ping.status===404?'Acesso assinado aceito; arquivo de diagnóstico inexistente (esperado)':('Resposta do R2: HTTP '+ping.status)};
+   }catch(error){status.r2={ok:false,message:String(error.message||error).slice(0,180)};}
+   status.mercadoPago={configured:!!env('MP_ACCESS_TOKEN')&&!!env('MP_WEBHOOK_SECRET'),message:'Presença das variáveis; pagamento real não foi verificado'};
+   status.notes='A configuração CORS só é comprovada com upload no navegador. O Netlify não pode ser verificado apenas pelo status do GitHub.';
+   return json(status);
+  }
   if(id==='dashboard'&&req.method==='GET'){
    const [events,photos,orders,customers,items]=await Promise.all([
     list('hax_events','?select=*&order=created_at.desc&limit=100'),
