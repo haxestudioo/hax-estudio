@@ -165,7 +165,7 @@ async function handler(req){
     const ok=missingKey;
     status.r2={ok,message:ok?'Credenciais e bucket aceitos (NoSuchKey esperado)':'Verifique R2_ACCOUNT_ID, R2_BUCKET e permissões: HTTP '+ping.status};
    }catch(error){status.r2={ok:false,message:String(error.message||error).slice(0,180)};}
-   status.mercadoPago={configured:!!env('MP_ACCESS_TOKEN')&&!!env('MP_WEBHOOK_SECRET'),message:'Presença das variáveis; pagamento real não foi verificado'};
+   status.mercadoPago={configured:!!env('MP_ACCESS_TOKEN')&&!!env('MP_WEBHOOK_SECRET')&&!!env('MP_PAYER_EMAIL'),message:'Requer MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET e MP_PAYER_EMAIL; e-mail operacional precisa ser autorizado pelo Mercado Pago. Pagamento real não verificado'};
    status.notes='A configuração CORS só é comprovada com upload no navegador. O Netlify não pode ser verificado apenas pelo status do GitHub.';
    return json(status);
   }
