@@ -100,5 +100,5 @@ alter table public.hax_photos enable row level security;
 alter table public.hax_customers enable row level security;
 alter table public.hax_orders enable row level security;
 alter table public.hax_order_items enable row level security;
-revoke all on all tables in schema public from anon,authenticated;
+revoke all on public.hax_events,public.hax_photos,public.hax_customers,public.hax_orders,public.hax_order_items from anon,authenticated;
 -- A função acima deve ser executada somente em um projeto Supabase exclusivo para HAX Fotos.
