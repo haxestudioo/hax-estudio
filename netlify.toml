@@ -1,6 +1,10 @@
 [build]
   command = "npm run build"
   publish = "dist"
+  # Não construir a branch teste automaticamente: mantém o último deploy existente.
+  # Atenção: o projeto Netlify está usando teste como branch de produção.
+  # Exit 0 cancela o build; exit 1 mantém builds normais das outras branches.
+  ignore = 'if [ "${BRANCH:-}" = "teste" ]; then exit 0; else exit 1; fi'
 [build.environment]
   NODE_VERSION = "22"
 [functions]
