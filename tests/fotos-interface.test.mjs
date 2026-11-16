@@ -22,6 +22,9 @@ test('interface só solicita nome e WhatsApp, não exige e-mail e marca aponta �
  assert.ok(document.querySelector('input[name=whatsapp]'));
  assert.ok(document.querySelector('#light-prev'));
  assert.ok(document.querySelector('#light-next'));
+ assert.ok(document.querySelector('#zoom-in'));
+ assert.ok(document.querySelector('#zoom-out'));
+ assert.ok(document.querySelector('#zoom-reset'));
  dom.window.close();
 });
 
@@ -57,8 +60,24 @@ test('busca de eventos e navegação das fotos por botão e gesto',async()=>{
  document.querySelector('[data-preview]').click();
  assert.equal(document.querySelector('#lightbox').open,true);
  assert.equal(document.querySelector('#light-position').textContent,'1 / 2');
+ assert.equal(document.querySelector('#light-select').textContent,'SELECIONAR FOTO');
+ document.querySelector('#light-select').click();
+ assert.equal(document.querySelector('#light-select').textContent,'REMOVER FOTO');
+ assert.equal(document.querySelector('#light-select').classList.contains('is-selected'),true);
+ document.querySelector('#light-select').click();
+ assert.equal(document.querySelector('#light-select').textContent,'SELECIONAR FOTO');
+ document.querySelector('#zoom-in').click();
+ assert.equal(document.querySelector('#zoom-reset').textContent,'150%');
+ assert.equal(document.querySelector('#large-photo').style.getPropertyValue('--photo-zoom'),'1.5');
+ assert.equal(document.querySelector('#zoom-out').disabled,false);
+ document.querySelector('#zoom-out').click();
+ assert.equal(document.querySelector('#zoom-reset').textContent,'100%');
+ document.querySelector('#zoom-in').click();
+ document.querySelector('#zoom-in').click();
+ assert.equal(document.querySelector('#zoom-reset').textContent,'200%');
  document.querySelector('#light-next').click();
  assert.equal(document.querySelector('#light-position').textContent,'2 / 2');
+ assert.equal(document.querySelector('#zoom-reset').textContent,'100%');
  const stage=document.querySelector('#viewer-stage');
  const from=new window.Event('touchstart',{bubbles:true});
  Object.defineProperty(from,'touches',{value:[{clientX:280,clientY:280}]});
@@ -76,6 +95,20 @@ test('busca de eventos e navegação das fotos por botão e gesto',async()=>{
  Object.defineProperty(swipeEnd,'changedTouches',{value:[{clientX:55,clientY:292}]});
  stage.dispatchEvent(swipeEnd);
  assert.equal(document.querySelector('#light-position').textContent,'2 / 2');
+ // Quando há ampliação, deslizar move a imagem, sem passar de fotografia por acidente.
+ document.querySelector('#zoom-in').click();
+ const panStart=new window.Event('touchstart',{bubbles:true});
+ Object.defineProperty(panStart,'touches',{value:[{clientX:260,clientY:210}]});
+ stage.dispatchEvent(panStart);
+ const panMove=new window.Event('touchmove',{bubbles:true,cancelable:true});
+ Object.defineProperty(panMove,'touches',{value:[{clientX:110,clientY:210}]});
+ stage.dispatchEvent(panMove);
+ const panEnd=new window.Event('touchend',{bubbles:true});
+ Object.defineProperty(panEnd,'changedTouches',{value:[{clientX:110,clientY:210}]});
+ stage.dispatchEvent(panEnd);
+ assert.equal(document.querySelector('#light-position').textContent,'2 / 2');
+ document.querySelector('#zoom-reset').click();
+ assert.equal(document.querySelector('#zoom-reset').textContent,'100%');
  window.clearInterval?.(0);
  window.close();
 });
