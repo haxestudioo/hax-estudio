@@ -12,7 +12,9 @@ Object.assign(process.env,{
  R2_SECRET_ACCESS_KEY:'testsecretaccesskey',
  MP_ACCESS_TOKEN:'APP_USR-fake',
  MP_WEBHOOK_SECRET:'mock-webhook-secret',
- PUBLIC_SITE_URL:origin
+ PUBLIC_SITE_URL:origin,
+ ADMIN_PASSWORD_HASH:'test-only-not-a-valid-password-hash',
+ ADMIN_SESSION_SECRET:'test-admin-session-secret-with-at-least-32-characters'
 });
 const idEvent=randomUUID(),idPhoto=randomUUID(),idOrder=randomUUID(),idCustomer=randomUUID(),idOther=randomUUID();
 const state={
@@ -88,4 +90,23 @@ test('pagamento em modo teste não libera originais, mesmo que o status seja apr
  const forbidden=await handler(req('/api/fotos/download/'+idPhoto+'?pedido='+idOrder+'&chave='+encodeURIComponent(token)));
  assert.equal(forbidden.status,403);
  state.mpLiveMode=true;
+});
+
+test('GET autenticado do painel funciona sem cabeçalho Origin',async()=>{
+ const {sessionToken}=await import('../netlify/lib/security.mjs');
+ const response=await handler(new Request(origin+'/api/fotos/admin/dashboard',{headers:{Cookie:'hax_session='+sessionToken()}}));
+ assert.equal(response.status,200);
+ const data=await response.json();
+ assert.ok(Array.isArray(data.events));
+ assert.ok(Array.isArray(data.customers));
+});
+test('POST autenticado sem Origin é bloqueado para evitar CSRF',async()=>{
+ const {sessionToken}=await import('../netlify/lib/security.mjs');
+ const response=await handler(new Request(origin+'/api/fotos/admin/event',{
+  method:'POST',
+  headers:{Cookie:'hax_session='+sessionToken(),'Content-Type':'application/json'},
+  body:JSON.stringify({title:'Evento não autorizado',price:15})
+ }));
+ assert.equal(response.status,403);
+ assert.equal((await response.json()).error,'Origem não autorizada.');
 });
