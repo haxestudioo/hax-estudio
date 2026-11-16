@@ -10,14 +10,15 @@ const id='10000000-1000-4000-8000-100000000000';
 const p1='20000000-1000-4000-8000-100000000000';
 const p2='20000000-1000-4000-8000-200000000000';
 
-test('interface só solicita nome e WhatsApp, não exige e-mail e marca aponta à loja',()=>{
+test('formulário inclui nome, WhatsApp e e-mail conforme Mercado Pago',()=>{
  const dom=new JSDOM(html,{url:'https://example.org/fotos/'});
  const document=dom.window.document;
  assert.equal(document.querySelector('a.brand')?.getAttribute('href'),'/fotos/');
  assert.match(document.querySelector('.hero h1')?.textContent||'',/ENCONTRE SUA FOTO!/);
  assert.ok(document.querySelector('#event-search'));
  assert.equal(document.querySelector('#filter'),null);
- assert.equal(document.querySelector('input[name=email]'),null);
+ assert.equal(document.querySelector('input[name=email]')?.required,true);
+ assert.equal(document.querySelector('input[name=email]')?.type,'email');
  assert.ok(document.querySelector('input[name=name]'));
  assert.ok(document.querySelector('input[name=whatsapp]'));
  assert.ok(document.querySelector('#light-prev'));
