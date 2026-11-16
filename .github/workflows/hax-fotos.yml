@@ -1,0 +1,33 @@
+name: HAX Fotos - verificacao branch teste
+on:
+  push:
+    branches: [teste]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Instalar dependencias
+        run: npm ci
+      - name: Testar e gerar versao publica
+        run: npm test
+      - name: Sintaxe dos modulos de loja e painel
+        run: |
+          node --check netlify/functions/fotos.mjs
+          node --check netlify/lib/r2.mjs
+          node --check public/fotos/fotos.js
+          node --check public/admin/fotos-admin.js
+          node --check public/admin/admin.js
+      - name: Conferir saida da loja
+        run: |
+          test -f dist/fotos/index.html
+          test -f dist/fotos/fotos.js
+          test -f dist/admin/fotos-admin.js
