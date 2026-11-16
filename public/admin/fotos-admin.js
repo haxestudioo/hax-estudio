@@ -9,6 +9,7 @@ function draw(container){
  container.innerHTML='<style>.hf-box{background:#fff;border:1px solid #d9d9d5;border-radius:9px;padding:18px;margin:16px 0}.hf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}.hf-grid label{display:grid;gap:5px;font-size:13px}.hf-grid input,.hf-grid select,.hf-grid textarea{width:100%;padding:10px;border:1px solid #b6b6b2;border-radius:5px;background:white;color:#202020}.hf-table{width:100%;border-collapse:collapse;font-size:12px}.hf-table th,.hf-table td{text-align:left;padding:10px;border-bottom:1px solid #e1e1df;vertical-align:top}.hf-scroll{overflow-x:auto}.hf-status{font-weight:700}.hf-button{padding:9px 12px;border:1px solid #818778;border-radius:5px;background:#253128;color:white;cursor:pointer;margin:3px;font-size:12px}.hf-button.secondary{background:white;color:#24322b}.hf-summary{background:#f4f5ef;padding:18px;border-radius:8px}.hf-summary strong{font-size:24px;display:block}.hf-thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:12px}.hf-thumbs img{width:100%;aspect-ratio:1;object-fit:cover}.hf-photo{border:1px solid #e1e1e1;padding:7px}.hf-photo small{display:block;overflow-wrap:anywhere}.hf-box h3{margin:0 0 13px}.hf-tip{color:#626e66;font-size:12px}.hf-upload{border:2px dashed #bdc6bc;padding:20px;text-align:center}.hf-upload input{max-width:100%}@media(max-width:650px){.hf-box{padding:12px}.hf-table{min-width:650px}}</style>'
  +'<h2>Venda de fotos / HAX Fotos</h2><p>Gerencie seus eventos, fotos originais, clientes e pagamentos. Os arquivos comerciais ficam em armazenamento privado.</p><p id="hax-fotos-feedback" role="status"></p>'
  +'<div class="hf-grid"><div class="hf-summary"><span>Pedidos registrados</span><strong>'+orders.length+'</strong></div><div class="hf-summary"><span>Vendas aprovadas</span><strong>'+approved.length+'</strong></div><div class="hf-summary"><span>Receita bruta aprovada</span><strong>'+money(turnover)+'</strong></div><div class="hf-summary"><span>Clientes cadastrados</span><strong>'+state.customers.length+'</strong></div></div>'
+ +'<section class="hf-box"><h3>Verificar serviços e marca d\'água</h3><p class="hf-tip">Consulta autorizada ao Supabase e R2. Não mostra suas chaves ou segredos. O upload real confirma o CORS.</p><button class="hf-button secondary" id="hf-diagnostics" type="button">VERIFICAR CONEXÕES</button><div id="hf-diagnostic-result" role="status"></div></section>'
  +'<section class="hf-box"><h3>Novo evento</h3><form id="hf-create"><div class="hf-grid"><label>Nome do evento<input name="title" required minlength="3" placeholder="Ex.: Corrida de Rua 2026"></label><label>Data do evento<input type="date" name="event_date"></label><label>Preço por foto (R$)<input name="price" type="number" min="1" max="100000" step=".01" value="15.00" required></label><label>Descrição<input name="description" maxlength="1000"></label></div><button class="hf-button" type="submit">CRIAR EVENTO</button></form></section>'
  +'<section class="hf-box"><h3>Eventos</h3><div class="hf-scroll"><table class="hf-table"><thead><tr><th>Evento</th><th>Preço/foto</th><th>Status</th><th>Ações</th></tr></thead><tbody>'+state.events.map(x=>'<tr><td>'+e(x.title)+'</td><td>'+money(x.price_cents)+'</td><td>'+(x.published?'Publicado':'Rascunho')+'</td><td><button class="hf-button secondary" data-manage="'+x.id+'">Gerenciar fotos</button><button class="hf-button" data-toggle="'+x.id+'" data-published="'+String(!x.published)+'">'+(x.published?'DESPUBLICAR':'PUBLICAR')+'</button><button class="hf-button secondary" data-edit="'+x.id+'">Editar</button><a class="hf-button secondary" target="_blank" rel="noopener" href="/fotos/#evento='+x.id+'">Abrir galeria ↗</a></td></tr>').join('')+'</tbody></table></div></section>'
  +'<section class="hf-box" id="hf-photo-box"><h3>Upload de fotografias originais</h3><p class="hf-tip">Selecione um evento, escolha as fotos e envie. Os arquivos originais nunca são reduzidos nem recebem marca d’água. Somente as prévias públicas são comprimidas e marcadas.</p><label>Evento <select id="hf-event"><option value="">Selecione</option>'+eventOptions()+'</select></label><div class="hf-upload"><input id="hf-files" type="file" accept="image/jpeg,image/png,image/webp" multiple><p class="hf-tip">JPG, PNG ou WebP. Até 70 MB por arquivo. Envio direto para o Cloudflare R2.</p><button class="hf-button" id="hf-upload" type="button">ENVIAR FOTOS</button><p id="hf-progress" role="status"></p></div><div class="hf-thumbs">'+state.photos.filter(p=>p.event_id===activeEvent).map(p=>'<article class="hf-photo"><img loading="lazy" src="/api/fotos/preview/'+p.id+'" alt=""><small>'+e(p.filename)+'</small><small>'+e(p.status)+'</small><button class="hf-button secondary" data-hide="'+p.id+'" data-hidden="'+String(p.status!=='hidden')+'">'+(p.status==='hidden'?'Exibir':'Ocultar')+'</button><button class="hf-button secondary" data-cover="'+p.id+'">Capa</button><a href="/api/fotos/download/'+p.id+'" target="_blank" rel="noopener">Original ↓</a></article>').join('')+'</div></section>'
@@ -17,10 +18,43 @@ function draw(container){
  bind(container);
 }
 async function refresh(container){state=await api('dashboard');if(!activeEvent&&state.events.length)activeEvent=state.events[0].id;draw(container);}
-function watermarkPreview(file){
- return new Promise(async(resolve,reject)=>{let bitmap;try{bitmap=await createImageBitmap(file);const size=Math.min(1,1500/Math.max(bitmap.width,bitmap.height));const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*size));canvas.height=Math.max(1,Math.round(bitmap.height*size));const ctx=canvas.getContext('2d');ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();bitmap=null;
- const fontSize=Math.max(22,Math.min(canvas.width/8,canvas.height/6));ctx.save();ctx.translate(canvas.width/2,canvas.height/2);ctx.rotate(-Math.PI/5);ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='900 '+fontSize+'px Arial';for(let y=-canvas.height*1.4;y<canvas.height*1.4;y+=fontSize*2.2){for(let x=-canvas.width*1.4;x<canvas.width*1.4;x+=fontSize*4.5){ctx.strokeStyle='rgba(0,0,0,.48)';ctx.lineWidth=5;ctx.strokeText('HAX ESTÚDIO',x,y);ctx.fillStyle='rgba(255,255,255,.38)';ctx.fillText('HAX ESTÚDIO',x,y);}}ctx.restore();canvas.toBlob(b=>b?resolve(b):reject(Error('Falha ao gerar prévia')),'image/webp',.76);
- }catch(error){bitmap?.close();reject(error);}});
+// Marca d'água original fornecida pelo estúdio. O PNG permanece em public/fotos/marca-dagua.png.
+let watermarkImagePromise;
+function getWatermarkImage(){
+ if(!watermarkImagePromise){
+  watermarkImagePromise=new Promise((resolve,reject)=>{
+   const img=new Image();
+   img.onload=()=>img.naturalWidth>0?resolve(img):reject(Error('Marca d\'água inválida.'));
+   img.onerror=()=>reject(Error('Marca d\'água ausente. Publique o arquivo fornecido em public/fotos/marca-dagua.png na branch teste.'));
+   img.src='/fotos/marca-dagua.png';
+  }).catch(error=>{watermarkImagePromise=undefined;throw error;});
+ }
+ return watermarkImagePromise;
+}
+async function watermarkPreview(file){
+ let bitmap;
+ try{
+  // Carregamos antes de criar a prévia para impedir qualquer imagem pública sem marca d'água.
+  const mark=await getWatermarkImage();
+  bitmap=await createImageBitmap(file);
+  const scale=Math.min(1,1500/Math.max(bitmap.width,bitmap.height));
+  const canvas=document.createElement('canvas');
+  canvas.width=Math.max(1,Math.round(bitmap.width*scale));
+  canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+  const ctx=canvas.getContext('2d');
+  if(!ctx)throw Error('Navegador sem suporte a edição de imagens.');
+  ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);
+  // Preserve a proporção original do padrão enviado e cubra toda a imagem.
+  const patternScale=Math.max(canvas.width/mark.naturalWidth,canvas.height/mark.naturalHeight);
+  const markWidth=mark.naturalWidth*patternScale;
+  const markHeight=mark.naturalHeight*patternScale;
+  ctx.save();
+  ctx.globalAlpha=.68;
+  ctx.drawImage(mark,(canvas.width-markWidth)/2,(canvas.height-markHeight)/2,markWidth,markHeight);
+  ctx.restore();
+  const preview=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(Error('Falha ao exportar a prévia.')),'image/webp',.78));
+  return preview;
+ }finally{bitmap?.close();}
 }
 async function uploadFiles(container){
  if(!activeEvent)return notice('Selecione um evento antes de enviar.',true);
@@ -36,7 +70,25 @@ async function uploadFiles(container){
  button.disabled=false;container.querySelector('#hf-progress').textContent=done+' de '+files.length+' fotografias enviadas com sucesso.';
  if(done)await refresh(container);
 }
+async function diagnostics(container){
+ const out=container.querySelector('#hf-diagnostic-result');
+ if(!out)return;
+ out.textContent='Verificando Supabase, R2 e arquivo de marca d\'água...';
+ try{
+  const d=await api('diagnostics');
+  let markOkay=false;
+  try{await getWatermarkImage();markOkay=true;}catch{}
+  const checks=[
+   ['Supabase',d.database],
+   ['Cloudflare R2',d.r2],
+   ['Mercado Pago', {ok:d.mercadoPago?.configured,message:d.mercadoPago?.message||'Credenciais pendentes'}],
+   ['Arquivo da marca d\'água',{ok:markOkay,message:markOkay?'Marca Hax Estúdio carregada': 'Falta enviar public/fotos/marca-dagua.png ao GitHub'}]
+  ];
+  out.innerHTML='<ul>'+checks.map(([name,check])=>'<li><strong>'+e(name)+': '+(check.ok?'OK':'PENDENTE')+'</strong> — '+e(check.message||'')+'</li>').join('')+'</ul><p class="hf-tip">'+e(d.notes||'')+'</p>';
+ }catch(error){out.textContent='Falha no diagnóstico: '+error.message;}
+}
 function bind(container){
+ container.querySelector('#hf-diagnostics')?.addEventListener('click',()=>diagnostics(container));
  container.querySelector('#hf-create').onsubmit=async(ev)=>{ev.preventDefault();const b=Object.fromEntries(new FormData(ev.target));try{const d=await api('event','POST',b);activeEvent=d.event.id;await refresh(container);notice('Evento criado! Envie as fotos antes de publicar.');}catch(x){notice(x.message,true);}};
  container.querySelector('#hf-event').onchange=ev=>{activeEvent=ev.target.value;draw(container);};
  container.querySelector('#hf-upload').onclick=()=>uploadFiles(container);
@@ -48,4 +100,4 @@ function bind(container){
  container.querySelectorAll('[data-cover]').forEach(b=>b.onclick=async()=>{try{await api('event','PATCH',{id:activeEvent,cover_photo_id:b.dataset.cover});await refresh(container);notice('Capa atualizada.');}catch(x){notice(x.message,true);}});
  container.querySelectorAll('[data-check]').forEach(b=>b.onclick=async()=>{try{const v=await api('order-status','POST',{id:b.dataset.check});await refresh(container);notice('Status: '+v.status);}catch(x){notice(x.message,true);}});
 }
-export async function mount(container){container.innerHTML='<p>Carregando eventos e vendas...</p>';try{await refresh(container);}catch(e){container.innerHTML='<p style="color:#b2342b">Não foi possível carregar HAX Fotos: '+e.message+'</p><p>Confira as variáveis de ambiente e o SQL de configuração antes de começar.</p>';}}
+export async function mount(container){container.innerHTML='<p>Carregando eventos e vendas...</p>';try{await refresh(container);}catch(e){container.innerHTML='<p style="color:#b2342b">Não foi possível carregar HAX Fotos: '+e.message+'</p><p>Confira as variáveis e as tabelas antes de começar.</p><button class="hf-button" id="hf-diagnostics">Verificar conexões</button><div id="hf-diagnostic-result"></div>';container.querySelector('#hf-diagnostics').onclick=()=>diagnostics(container);}}
