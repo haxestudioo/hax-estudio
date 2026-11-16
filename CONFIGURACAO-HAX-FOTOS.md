@@ -49,6 +49,30 @@ Atualizado em 16/11/2026. A loja é uma INCLUSÃO: site e /admin/ existentes per
 8. Faça um upload de imagem pelo admin. Deve aparecer em R2 a estrutura `originais/<evento>/<foto>/arquivo.jpg` e `previas/<evento>/<foto>.webp`. Só os originais sem marca d'água são entregues ao cliente após pagar.
 9. Para arquivos originais, a transferência é direta do navegador ao R2 por URL assinada (sem usar o limite de upload das Netlify Functions). O download também redireciona para URL assinada de curto prazo.
 
+## 3A. Usar a marca d'água original fornecida (etapa obrigatória antes do upload)
+O painel foi atualizado para usar EXATAMENTE o arquivo de marca d'água personalizado do estúdio, em vez de texto gerado por código.
+Como o GitHub atual só está disponível nesta integração para envio de arquivos textuais, o arquivo PNG binário precisa ser enviado uma vez pela interface GitHub:
+1. Baixe o arquivo `marca-dagua.png` preparado a partir do PNG original anexado à conversa com o ChatGPT.
+2. No repositório `haxestudioo/hax-estudio`, selecione a branch `teste`, abra a pasta `public/fotos/`.
+3. Escolha `Add file` > `Upload files`, envie o PNG com o nome **exato** `marca-dagua.png`.
+4. Confirme o commit diretamente em `teste` (NÃO na `main`). Espere o deploy da branch ficar pronto.
+5. No endereço da branch, verifique `/fotos/marca-dagua.png`. O navegador deve exibir o PNG translúcido; não uma página 404.
+6. No painel `/admin/` > `Venda de Fotos`, clique em `VERIFICAR CONEXÕES`. O indicador `Arquivo da marca d'água` deve aparecer OK.
+7. Somente depois envie novas fotografias. O upload é interrompido se a marca personalizada não estiver disponível. As prévias anteriores feitas com marca por texto não são alteradas automaticamente; para substituí-las, é preciso novo upload das fotografias, preservando pedidos já vendidos.
+
+O PNG anexo tem transparência (RGBA) e o logo Hax Estúdio repetido. O código cobre a fotografia com essa arte, preservando a proporção e usando opacidade ~68% sobre a imagem. O original enviado ao Cloudflare R2 permanece inalterado. Evite aplicar qualquer marca diretamente aos arquivos originais.
+
+## 3B. Diagnóstico de conectividade antes de publicar
+No painel `/admin/` > `Venda de Fotos`, clique `VERIFICAR CONEXÕES`.
+- **Supabase OK:** a chave de backend consultou `hax_events`; se falhar, confira URL, chave secret, SQL e escopo das variáveis no Netlify.
+- **Cloudflare R2 OK:** uma requisição assinada foi aceita (404 é normal porque testa um arquivo inexistente); se 403, confira as chaves, ID da conta, nome do bucket e permissões.
+- **Marca d'água OK:** o PNG foi publicado na branch.
+- **Mercado Pago configurado:** apenas as variáveis estão presentes; isso NÃO confirma um Pix real.
+- O diagnóstico do servidor **não verifica CORS**. O CORS é comprovado no navegador quando o admin envia uma foto; confira o domínio exato da branch em `AllowedOrigins`, o método `PUT` e o cabeçalho `Content-Type`.
+
+Se a aba não carregar, o botão `Verificar conexões` também aparece na tela de erro, para diagnosticar sem precisar cadastrar eventos.
+A integração GitHub não permite ver as variáveis secretas, os logs internos do Netlify ou a configuração privada do Cloudflare; estes detalhes só podem ser confirmados no respectivo painel do proprietário.
+
 ## 4. Configurar Mercado Pago — PIX REAL (não usar conta de teste)
 1. Entre em https://www.mercadopago.com.br/developers/panel/applications e crie/abra uma aplicação do vendedor **real**.
 2. Habilite Pix no seu cadastro, conforme os requisitos atuais do Mercado Pago. Confira a titularidade e habilitação para receber pagamentos.
