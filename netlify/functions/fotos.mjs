@@ -43,7 +43,7 @@ async function syncPayment(order,payment){
  if(String(payment.id)!==String(order.payment_id)||String(payment.external_reference)!==order.id||payment.payment_method_id!=='pix')
    throw err('Pagamento não corresponde ao pedido.',409);
  if(Number(payment.transaction_amount)!==order.total_cents/100)throw err('Valor do pagamento inconsistente.',409);
- if(env('MP_REQUIRE_LIVE')!=='false'&&payment.live_mode!==true)throw err('Pagamento não é de produção.',409);
+ if(payment.live_mode!==true)throw err('Pagamento não é de produção.',409);
  const statuses={approved:'approved',rejected:'rejected',cancelled:'cancelled',refunded:'refunded',charged_back:'charged_back'};
  const next=statuses[payment.status]||'pending';
  if(order.status==='approved'&&next==='pending')return order;
