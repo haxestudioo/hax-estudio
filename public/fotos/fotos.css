@@ -59,3 +59,39 @@ main,.section,.hero,.top,.event-grid,.photo-grid,.tile{min-width:0;max-width:100
 
 /* Retratos ocupam a altura do celular sem deformar; paisagens permanecem inteiras. */
 @media(max-width:650px){.photo-viewer.is-portrait #large-photo{object-fit:cover!important}.photo-viewer:not(.is-portrait) #large-photo{object-fit:contain!important}}
+
+/* Zoom de prévia (não expõe a foto original): controles sempre visíveis no visor. */
+.photo-viewer #viewer-stage{touch-action:none;overscroll-behavior:contain}
+.photo-viewer #large-photo{
+ transform:translate3d(var(--pan-x,0px),var(--pan-y,0px),0) scale(var(--photo-zoom,1))!important;
+ transform-origin:center center!important;
+ transition:transform .15s ease-out!important;
+ will-change:transform;
+}
+.photo-viewer .viewer-zoom{
+ position:absolute;z-index:5;right:16px;bottom:14px;
+ display:flex;align-items:center;gap:4px;
+ background:#101618e8;border:1px solid #626d69;
+ border-radius:8px;padding:5px;
+ box-shadow:0 3px 22px #0009;
+}
+.photo-viewer .viewer-zoom button{
+ display:grid;place-items:center;height:44px;min-width:44px;
+ border:0;border-radius:5px;background:#2a3336;
+ color:#fff;font:700 24px/1 Manrope,Arial,sans-serif;
+}
+.photo-viewer .viewer-zoom #zoom-reset{min-width:64px;font-size:12px;letter-spacing:.03em}
+.photo-viewer .viewer-zoom button:disabled{opacity:.32;cursor:default}
+.photo-viewer .viewer-zoom button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.photo-viewer .viewer-zoom button:hover:not(:disabled){background:#405044}
+.photo-viewer #light-select.is-selected{background:transparent;color:#f7f7f3;border:1px solid #c2cecd}
+.photo-viewer #light-select.is-selected:hover{background:#263034}
+.photo-viewer .viewer-stage.is-zoomed #large-photo{cursor:grab}
+@media(max-width:650px){
+ .photo-viewer .viewer-zoom{right:12px;bottom:12px;gap:3px;padding:4px}
+ .photo-viewer .viewer-zoom button{height:42px;min-width:42px}
+ .photo-viewer .viewer-zoom #zoom-reset{min-width:60px}
+}
+@media(prefers-reduced-motion:reduce){
+ .photo-viewer #large-photo{transition:none!important}
+}
