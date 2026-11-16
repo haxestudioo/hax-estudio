@@ -186,14 +186,23 @@ async function handler(req){
    const patch={};if(typeof b.title==='string'&&safeName(b.title).length>=3)patch.title=safeName(b.title);
    if(typeof b.published==='boolean'){
     if(b.published){
-     const ready=await list('hax_photos','?event_id=eq.'+q(b.id)+'&status=eq.ready&select=id&limit=1');
+     const ready=await list('hax_photos','?event_id=eq.'+q(b.id)+'&status=eq.ready&select=id&order=created_at.asc&limit=1');
      if(!ready?.length)throw err('Envie pelo menos uma fotografia antes de publicar o evento.');
+     const current=await getEvent(b.id);
+     if(!current?.cover_photo_id)patch.cover_photo_id=ready[0].id;
     }
     patch.published=b.published;
    }
    if(typeof b.description==='string')patch.description=safeName(b.description,1000);
    if(b.price!==undefined){const cents=Math.round(Number(b.price)*100);if(!Number.isSafeInteger(cents)||cents<100||cents>10000000)throw err('Preço inválido.');patch.price_cents=cents;}
-   if(b.cover_photo_id!==undefined){if(b.cover_photo_id!==null&&!uuid(b.cover_photo_id))throw err('Capa inválida.');patch.cover_photo_id=b.cover_photo_id;}
+   if(b.cover_photo_id!==undefined){
+    if(b.cover_photo_id!==null){
+     if(!uuid(b.cover_photo_id))throw err('Capa inválida.');
+     const cover=await single('hax_photos','?id=eq.'+q(b.cover_photo_id)+'&event_id=eq.'+q(b.id)+'&status=eq.ready&select=id');
+     if(!cover)throw err('A capa precisa ser uma foto disponível deste evento.');
+    }
+    patch.cover_photo_id=b.cover_photo_id;
+   }
    patch.updated_at=new Date().toISOString();
    const rows=await change('hax_events','?id=eq.'+q(b.id),patch);
    return json({event:rows[0]});
