@@ -34,6 +34,13 @@ function safeName(s,max=120){return String(s||'').replace(/[<>\r\n]/g,'').trim()
 function publicEvent(e){return {id:e.id,title:e.title,slug:e.slug,description:e.description,event_date:e.event_date,price_cents:e.price_cents,cover_photo_id:e.cover_photo_id};}
 function publicPhoto(p){return {id:p.id,event_id:p.event_id,filename:p.filename,preview:'/api/fotos/preview/'+p.id};}
 async function getEvent(id){return single('hax_events','?id=eq.'+q(id)+'&select=*');}
+function paymentNotificationUrl(){
+ const context=env('CONTEXT');
+ const origin=context==='deploy-preview'?env('DEPLOY_PRIME_URL'):required('PUBLIC_SITE_URL');
+ if(!origin||!/^https:\/\/[a-z0-9.-]+(?::443)?\/?$/i.test(origin))
+  throw err('Configure o endereço HTTPS público do Webhook para este ambiente.',503);
+ return origin.replace(/\/$/,'')+'/api/fotos/webhook';
+}
 async function getPayment(id){
  const resp=await fetch('https://api.mercadopago.com/v1/payments/'+encodeURIComponent(id),{headers:{Authorization:'Bearer '+required('MP_ACCESS_TOKEN')}});
  if(!resp.ok)throw err('Não foi possível confirmar o pagamento no Mercado Pago.',502);
@@ -81,7 +88,7 @@ async function handler(req){
  if(kind==='webhook'){
   if(req.method!=='POST')throw err('Método não permitido.',405);
   const body=await req.json(); const paymentId=String(u.searchParams.get('data.id')||body?.data?.id||'');
-  if(body?.type!=='payment'||!/^\d+$/.test(paymentId))return json({ok:true});
+  if((u.searchParams.get('type')||body?.type)!=='payment'||!/^\d+$/.test(paymentId))return json({ok:true});
   if(!verifyWebhook(req,paymentId))throw err('Assinatura inválida.',401);
   const order=await single('hax_orders','?payment_id=eq.'+q(paymentId)+'&select=*');
   if(order)await syncPayment(order,await getPayment(paymentId));
@@ -105,21 +112,18 @@ async function handler(req){
   return serveR2(photo.preview_key,'image/webp','preview.webp');
  }
  if(kind==='checkout'&&req.method==='POST'){
-  checkOrigin(req);required('MP_ACCESS_TOKEN');
+  checkOrigin(req);required('MP_ACCESS_TOKEN');required('MP_WEBHOOK_SECRET');
   if(!required('MP_ACCESS_TOKEN').startsWith('APP_USR-'))throw err('Configure uma credencial de produção do Mercado Pago.',503);
   const body=await req.json();const eventId=body.eventId,ids=body.photoIds;
   if(!uuid(eventId)||!Array.isArray(ids)||ids.length<1||ids.length>100||new Set(ids).size!==ids.length||!ids.every(uuid))throw err('Seleção de fotos inválida.');
   const name=safeName(body.name,100),whatsapp=String(body.whatsapp||'').replace(/\D/g,'');
-  if(name.length<3||whatsapp.length<10||whatsapp.length>13)throw err('Informe nome e WhatsApp com DDD válidos.');
-  // O MP exige e-mail na API Pix. É um endereço operacional configurado pelo vendedor,
-  // NUNCA um e-mail inventado/atribuído ao cliente. O checkout não solicita e-mail.
-  const payerEmail=required('MP_PAYER_EMAIL').trim().toLowerCase();
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payerEmail))throw err('Configure MP_PAYER_EMAIL com endereço válido autorizado para Pix.',503);
-  const email=''; // Cliente identificado exclusivamente por nome/WhatsApp no CRM.
+  const email=String(body.email||'').trim().toLowerCase();
+  if(name.length<3||whatsapp.length<10||whatsapp.length>13||email.length>160||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    throw err('Informe nome, WhatsApp com DDD e e-mail válidos.');
   const token=randomBytes(32).toString('base64url');
   const created=await db('rpc/hax_create_order',{method:'POST',body:{p_event_id:eventId,p_photo_ids:ids,p_name:name,p_whatsapp:whatsapp,p_email:email,p_access_hash:hash(token)}});
   const orderId=created.id;
-  const mpr=await fetch('https://api.mercadopago.com/v1/payments',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+required('MP_ACCESS_TOKEN'),'X-Idempotency-Key':orderId},body:JSON.stringify({transaction_amount:created.total_cents/100,description:'HAX Fotos - Pedido '+orderId.slice(0,8),payment_method_id:'pix',external_reference:orderId,payer:{email:payerEmail,first_name:name},notification_url:(env('PUBLIC_SITE_URL')||'https://haxestudio.com.br').replace(/\/$/,'')+'/api/fotos/webhook'})});
+  const mpr=await fetch('https://api.mercadopago.com/v1/payments',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+required('MP_ACCESS_TOKEN'),'X-Idempotency-Key':orderId},body:JSON.stringify({transaction_amount:created.total_cents/100,description:'HAX Fotos - Pedido '+orderId.slice(0,8),payment_method_id:'pix',external_reference:orderId,payer:{email,first_name:name},notification_url:paymentNotificationUrl()})});
   const payment=await mpr.json();
   if(!mpr.ok||!payment.id){console.error('MP create failed',mpr.status,JSON.stringify(payment).slice(0,800));throw err('O Pix não pôde ser gerado. Nenhuma foto foi liberada; tente novamente.',502);}
   const qr=payment.point_of_interaction?.transaction_data||{};
