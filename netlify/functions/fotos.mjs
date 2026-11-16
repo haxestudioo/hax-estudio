@@ -135,11 +135,12 @@ async function handler(req){
   if(admin&&!orderId){const p=await single('hax_photos','?id=eq.'+q(id)+'&select=original_key,filename');if(!p)throw err('Foto não encontrada.',404);key=p.original_key;filename=p.filename;}
   else{
    const order=admin?await single('hax_orders','?id=eq.'+q(orderId)+'&select=*'):await authorizedOrder(req,orderId);
-   if(!order||order.status!=='approved')throw err('O arquivo será liberado após a confirmação do Pix.',403);
+   if(!order||(!admin&&order.status!=='approved'))throw err('O arquivo será liberado após a confirmação do Pix.',403);
    items=await single('hax_order_items','?order_id=eq.'+q(orderId)+'&photo_id=eq.'+q(id)+'&select=original_key_snapshot,filename_snapshot');
    if(!items)throw err('Foto não pertence a este pedido.',403);key=items.original_key_snapshot;filename=items.filename_snapshot;
   }
-  return serveR2(key,'application/octet-stream',filename,true);
+  // URL assinada por prazo curto: download direto do R2 preserva arquivos grandes em resolução original.
+  return new Response(null,{status:302,headers:{Location:signR2('GET',key,120),'Cache-Control':'no-store','Referrer-Policy':'no-referrer'}});
  }
  if(kind==='admin'){
   okAdmin(req);
@@ -203,4 +204,4 @@ async function handler(req){
  throw err('Rota não encontrada.',404);
 }
 export default async (req)=>{try{return await handler(req);}catch(e){console.error('Fotos API',e.message);return json({error:e.status?e.message:'Não foi possível concluir esta operação. Tente novamente.'},e.status||500);}};
-export const config={path:['/api/fotos/events','/api/fotos/event/:id','/api/fotos/preview/:id','/api/fotos/checkout','/api/fotos/order/:id','/api/fotos/download/:id','/api/fotos/admin/:action','/api/fotos/webhook'],rateLimit:{windowLimit:150,windowSize:60,aggregateBy:'ip',action:'rate_limit'}};
+export const config={path:['/api/fotos/events','/api/fotos/event/:id','/api/fotos/preview/:id','/api/fotos/checkout','/api/fotos/order/:id','/api/fotos/download/:id','/api/fotos/admin/:action','/api/fotos/webhook']};
