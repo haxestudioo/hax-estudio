@@ -204,4 +204,4 @@ async function handler(req){
  throw err('Rota não encontrada.',404);
 }
 export default async (req)=>{try{return await handler(req);}catch(e){console.error('Fotos API',e.message);return json({error:e.status?e.message:'Não foi possível concluir esta operação. Tente novamente.'},e.status||500);}};
-export const config={path:['/api/fotos/events','/api/fotos/event/:id','/api/fotos/preview/:id','/api/fotos/checkout','/api/fotos/order/:id','/api/fotos/download/:id','/api/fotos/admin/:action','/api/fotos/webhook']};
+export const config={path:['/api/fotos/events','/api/fotos/event/:id','/api/fotos/preview/:id','/api/fotos/order/:id','/api/fotos/download/:id','/api/fotos/admin/:action','/api/fotos/webhook']};
