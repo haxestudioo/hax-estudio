@@ -38,6 +38,9 @@ create table if not exists public.hax_customers (
 create table if not exists public.hax_orders (
  id uuid primary key default gen_random_uuid(),
  customer_id uuid not null references public.hax_customers(id),
+ buyer_name text not null,
+ buyer_whatsapp text not null,
+ buyer_email text not null,
  event_id uuid not null references public.hax_events(id),
  access_hash text not null,
  total_cents integer not null check(total_cents>0),
@@ -82,8 +85,8 @@ begin
  values(p_name,p_whatsapp,p_email)
  on conflict(whatsapp) do update set name=excluded.name,email=excluded.email
  returning id into v_customer;
- insert into public.hax_orders(customer_id,event_id,access_hash,total_cents)
- values(v_customer,p_event_id,p_access_hash,v_event.price_cents*v_count)
+ insert into public.hax_orders(customer_id,buyer_name,buyer_whatsapp,buyer_email,event_id,access_hash,total_cents)
+ values(v_customer,p_name,p_whatsapp,p_email,p_event_id,p_access_hash,v_event.price_cents*v_count)
  returning id into v_order;
  insert into public.hax_order_items(order_id,photo_id,unit_price_cents,original_key_snapshot,filename_snapshot)
  select v_order,id,v_event.price_cents,original_key,filename
