@@ -31,7 +31,10 @@ function updateViewer(){
  const p=photos[lightIndex];if(!p)return;
  lightId=p.id;
  const image=$('#large-photo');
+ image.onload=()=>{$('#lightbox').classList.toggle('is-portrait',image.naturalHeight>image.naturalWidth);};
+ $('#lightbox').classList.remove('is-portrait');
  image.src=p.preview;
+ if(image.complete&&image.naturalWidth)$('#lightbox').classList.toggle('is-portrait',image.naturalHeight>image.naturalWidth);
  image.alt='Foto '+(lightIndex+1)+' de '+photos.length+': '+p.filename;
  $('#viewer-blur').style.backgroundImage='url("'+p.preview+'")';
  $('#light-title').textContent=p.filename;
