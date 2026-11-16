@@ -46,7 +46,7 @@ globalThis.fetch=async (input,options={})=>{
   if(path==='/rest/v1/hax_order_items')return json(state.item?[state.item]:[]);
   throw Error('Rota Supabase não simulada: '+path);
  }
- if(url.hostname.endsWith('.r2.cloudflarestorage.com') && method==='HEAD')return new Response(null,{status:404});
+ if(url.hostname.endsWith('.r2.cloudflarestorage.com') && method==='GET')return new Response('<Error><Code>NoSuchKey</Code><Message>The specified key does not exist.</Message></Error>',{status:404,headers:{'Content-Type':'application/xml'}});
  if(url.hostname==='api.mercadopago.com'){
   if(path==='/v1/payments'&&method==='POST')return json({id:987654321,status:'pending',live_mode:true,external_reference:idOrder,payment_method_id:'pix',transaction_amount:10,point_of_interaction:{transaction_data:{qr_code:'PIXFAKE',qr_code_base64:'cGl4'}}});
   if(path==='/v1/payments/987654321')return json({id:987654321,status:state.mpStatus,live_mode:state.mpLiveMode,external_reference:idOrder,payment_method_id:'pix',transaction_amount:10});
