@@ -125,8 +125,22 @@ async function handler(req){
   const created=await db('rpc/hax_create_order',{method:'POST',body:{p_event_id:eventId,p_photo_ids:ids,p_name:name,p_whatsapp:whatsapp,p_email:email,p_access_hash:hash(token)}});
   const orderId=created.id;
   const mpr=await fetch('https://api.mercadopago.com/v1/payments',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+required('MP_ACCESS_TOKEN'),'X-Idempotency-Key':orderId},body:JSON.stringify({transaction_amount:created.total_cents/100,description:'HAX Fotos - Pedido '+orderId.slice(0,8),payment_method_id:'pix',external_reference:orderId,payer:{email,first_name:name},notification_url:notificationUrl})});
-  const payment=await mpr.json();
-  if(!mpr.ok||!payment.id){console.error('MP create failed',mpr.status,JSON.stringify(payment).slice(0,800));throw err('O Pix não pôde ser gerado. Nenhuma foto foi liberada; tente novamente.',502);}
+  const payment=await mpr.json().catch(()=>({}));
+  if(!mpr.ok||!payment?.id){
+   const code=payment?.cause?.[0]?.code;
+   // 13253: o recebedor ainda não tem chave Pix habilitada para gerar o QR Code.
+   const missingPixKey=Number(code)===13253||/collector user without key enabled for QR/i.test(String(payment?.message||''));
+   // Não registrar dados pessoais ou credenciais na saída do servidor.
+   console.error('MP create failed',mpr.status,'code',Number.isFinite(Number(code))?Number(code):'unknown');
+   if(missingPixKey){
+    // A API recusou a criação do Pix: o pedido não pode permanecer "aguardando pagamento".
+    try{
+     await change('hax_orders','?id=eq.'+q(orderId),{status:'cancelled',payment_status:'pix_key_unavailable'});
+    }catch(error){console.error('Não foi possível cancelar pedido sem Pix:',error.message);}
+    throw err('Pix indisponível: a conta recebedora precisa ter uma chave Pix ativa no Mercado Pago. Abra o aplicativo > Área Pix > Gerenciar chaves. Código MP 13253. Nenhuma cobrança foi gerada.',503);
+   }
+   throw err('O Pix não pôde ser gerado pelo Mercado Pago. Nenhuma foto foi liberada; verifique a conta recebedora e tente novamente.',502);
+  }
   const qr=payment.point_of_interaction?.transaction_data||{};
   await change('hax_orders','?id=eq.'+q(orderId),{payment_id:String(payment.id),payment_status:payment.status||'pending',pix_code:qr.qr_code||null,pix_qr_base64:qr.qr_code_base64||null,expires_at:payment.date_of_expiration||null});
   return json({orderId,token,total_cents:created.total_cents,pix_code:qr.qr_code||null,pix_qr_base64:qr.qr_code_base64||null,expires_at:payment.date_of_expiration||null});
