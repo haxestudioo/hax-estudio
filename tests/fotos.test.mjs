@@ -21,7 +21,7 @@ const state={
  event:{id:idEvent,title:'Maratona',slug:'maratona',description:'',price_cents:1000,published:true,event_date:'2026-11-16'},
  photo:{id:idPhoto,event_id:idEvent,filename:'original.jpg',status:'ready',original_key:'originais/a/original.jpg',preview_key:'previas/a.webp'},
  customer:{id:idCustomer,name:'Cliente Teste',whatsapp:'44999999999',email:'cliente@example.com'},
- order:null, item:null, mpStatus:'pending',mpLiveMode:true,lastPaymentPayload:null,lastOrderPayload:null
+ order:null, item:null, mpStatus:'pending',mpLiveMode:true,mpCreateError:false,lastPaymentPayload:null,lastOrderPayload:null
 };
 const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}});
 const originalFetch=globalThis.fetch;
@@ -52,7 +52,7 @@ globalThis.fetch=async (input,options={})=>{
  }
  if(url.hostname.endsWith('.r2.cloudflarestorage.com') && method==='GET')return new Response('<Error><Code>NoSuchKey</Code><Message>The specified key does not exist.</Message></Error>',{status:404,headers:{'Content-Type':'application/xml'}});
  if(url.hostname==='api.mercadopago.com'){
-  if(path==='/v1/payments'&&method==='POST'){state.lastPaymentPayload=body;return json({id:987654321,status:'pending',live_mode:true,external_reference:idOrder,payment_method_id:'pix',transaction_amount:10,point_of_interaction:{transaction_data:{qr_code:'PIXFAKE',qr_code_base64:'cGl4'}}});}
+  if(path==='/v1/payments'&&method==='POST'){state.lastPaymentPayload=body;if(state.mpCreateError)return json({error:'bad_request',message:'Collector user without key enabled for QR rendernull',cause:[{code:13253,description:'Error in Financial Identity Use Case'}]},400);return json({id:987654321,status:'pending',live_mode:true,external_reference:idOrder,payment_method_id:'pix',transaction_amount:10,point_of_interaction:{transaction_data:{qr_code:'PIXFAKE',qr_code_base64:'cGl4'}}});}
   if(path==='/v1/payments/987654321')return json({id:987654321,status:state.mpStatus,live_mode:state.mpLiveMode,external_reference:idOrder,payment_method_id:'pix',transaction_amount:10});
  }
  throw Error('Requisição não prevista: '+input);
@@ -198,4 +198,18 @@ test('Pix da prévia envia notificação à própria prévia, não ao domínio d
   delete process.env.CONTEXT;
   delete process.env.DEPLOY_PRIME_URL;
  }
+});
+
+test('Mercado Pago 13253 explica falta de chave Pix e cancela pedido sem cobrança',async()=>{
+ state.mpCreateError=true;
+ try{
+  const response=await handler(req('/api/fotos/checkout',{method:'POST',body:{eventId:idEvent,photoIds:[idPhoto],name:'Cliente Teste',whatsapp:'44999999999',email:'cliente@example.com'}}));
+  assert.equal(response.status,503);
+  const body=await response.json();
+  assert.match(body.error,/chave Pix ativa/i);
+  assert.match(body.error,/13253/);
+  assert.equal(state.order.status,'cancelled');
+  assert.equal(state.order.payment_status,'pix_key_unavailable');
+  assert.equal(state.order.payment_id,undefined);
+ }finally{state.mpCreateError=false;}
 });
