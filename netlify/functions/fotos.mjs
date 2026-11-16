@@ -7,8 +7,8 @@ const err=(message,status=400)=>Object.assign(new Error(message),{status});
 const required=(key)=>{const v=env(key);if(!v)throw err('Configuração pendente: '+key,503);return v;};
 function dbBase(){return required('SUPABASE_URL').replace(/\/$/,'')+'/rest/v1/';}
 async function db(table,{method='GET',query='',body,headers={}}={}){
- const key=required('SUPABASE_SERVICE_ROLE_KEY');
- const r=await fetch(dbBase()+table+query,{method,headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json',Accept:'application/json',...headers},body:body===undefined?undefined:JSON.stringify(body)});
+ const key=env('SUPABASE_SECRET_KEY')||env('SUPABASE_SERVICE_ROLE_KEY')||required('SUPABASE_SECRET_KEY');
+ const r=await fetch(dbBase()+table+query,{method,headers:{apikey:key,...(key.startsWith('sb_secret_')?{}:{Authorization:'Bearer '+key}),'Content-Type':'application/json',Accept:'application/json',...headers},body:body===undefined?undefined:JSON.stringify(body)});
  if(!r.ok){console.error('HAX DB',r.status,(await r.text()).slice(0,700));throw err('Erro ao consultar os dados da loja.',502);}
  const txt=await r.text();return txt?JSON.parse(txt):null;
 }
