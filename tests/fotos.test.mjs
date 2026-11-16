@@ -46,6 +46,7 @@ globalThis.fetch=async (input,options={})=>{
   if(path==='/rest/v1/hax_order_items')return json(state.item?[state.item]:[]);
   throw Error('Rota Supabase não simulada: '+path);
  }
+ if(url.hostname.endsWith('.r2.cloudflarestorage.com') && method==='HEAD')return new Response(null,{status:404});
  if(url.hostname==='api.mercadopago.com'){
   if(path==='/v1/payments'&&method==='POST')return json({id:987654321,status:'pending',live_mode:true,external_reference:idOrder,payment_method_id:'pix',transaction_amount:10,point_of_interaction:{transaction_data:{qr_code:'PIXFAKE',qr_code_base64:'cGl4'}}});
   if(path==='/v1/payments/987654321')return json({id:987654321,status:state.mpStatus,live_mode:state.mpLiveMode,external_reference:idOrder,payment_method_id:'pix',transaction_amount:10});
@@ -109,4 +110,16 @@ test('POST autenticado sem Origin é bloqueado para evitar CSRF',async()=>{
  }));
  assert.equal(response.status,403);
  assert.equal((await response.json()).error,'Origem não autorizada.');
+});
+
+test('diagnóstico autenticado consulta Supabase e Cloudflare sem expor tokens',async()=>{
+ const {sessionToken}=await import('../netlify/lib/security.mjs');
+ const response=await handler(new Request(origin+'/api/fotos/admin/diagnostics',{headers:{Cookie:'hax_session='+sessionToken()}}));
+ assert.equal(response.status,200);
+ const body=await response.json();
+ assert.equal(body.database.ok,true);
+ assert.equal(body.r2.ok,true);
+ assert.equal(body.mercadoPago.configured,true);
+ assert.equal(JSON.stringify(body).includes('sb_secret_mock_safe_test_key'),false);
+ assert.equal(JSON.stringify(body).includes('testsecretaccesskey'),false);
 });
