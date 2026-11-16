@@ -1,9 +1,9 @@
 name: HAX Fotos - verificacao branch teste
 on:
   push:
-    branches: [teste]
+    branches: [teste, teste-upload-preview]
   pull_request:
-    branches: [main]
+    branches: [main, teste]
 permissions:
   contents: read
 jobs:
