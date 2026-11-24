@@ -140,15 +140,17 @@ async function handler(req){
  }
  if(kind==='preview'&&req.method==='GET'){
   if(!uuid(id))throw err('Imagem inválida.',404);
-  const photo=await single('hax_photos','?id=eq.'+q(id)+'&status=eq.ready&select=id,event_id,preview_key');
+  const admin=authenticated(req);
+  const photo=await single('hax_photos','?id=eq.'+q(id)+(admin?'&status=in.(ready,hidden)':'&status=eq.ready')+'&select=id,event_id,status,preview_key');
   if(!photo)throw err('Imagem não encontrada.',404);
-  const event=await getEvent(photo.event_id);if(!event?.published&&!authenticated(req))throw err('Imagem indisponível.',404);
+  const event=await getEvent(photo.event_id);if(!event||(!admin&&(!event.published||photo.status==='hidden')))throw err('Imagem indisponível.',404);
   if(!isPreviewKey(photo.preview_key))throw err('Imagem indisponível.',404);
   // Old URLs still work. They recheck visibility before issuing a direct link.
   // Drafts stay same-origin and private; the bucket is never public.
-  const signed=event?.published===true?previewLink(photo.preview_key):null;
+  const isPublic=event.published===true&&photo.status!=='hidden';
+  const signed=isPublic?previewLink(photo.preview_key):null;
   if(signed)return new Response(null,{status:302,headers:{Location:signed.url,...noCache,'Referrer-Policy':'no-referrer'}});
-  return serveR2(photo.preview_key,'image/webp','preview.webp',false,event?.published!==true);
+  return serveR2(photo.preview_key,'image/webp','preview.webp',false,!isPublic);
  }
  if(kind==='checkout'&&req.method==='POST'){
   checkOrigin(req);required('MP_ACCESS_TOKEN');required('MP_WEBHOOK_SECRET');
@@ -241,9 +243,15 @@ async function handler(req){
     customers:['hax_customers','id,name,whatsapp,email,created_at,last_purchase_at','id.asc'],
     items:['hax_order_items','order_id,photo_id,filename_snapshot,unit_price_cents','order_id.asc,photo_id.asc']
    };
-   const set=sets[u.searchParams.get('table')];const offset=Number(u.searchParams.get('offset')||0);
+   const table=u.searchParams.get('table'),set=sets[table];const offset=Number(u.searchParams.get('offset')||0),eventId=u.searchParams.get('event');
    if(!Array.isArray(set)||!Number.isSafeInteger(offset)||offset<0)throw err('Consulta inválida.');
-   const rows=await list(set[0],'?select='+set[1]+'&order='+set[2]+'&limit=200&offset='+offset);
+   if(eventId&&(table!=='photos'||!uuid(eventId)))throw err('Evento inválido.');
+   const scoped=table==='photos'&&eventId;
+   const rows=await list(set[0],'?select='+set[1]+(scoped?',preview_key':'')+(scoped?'&event_id=eq.'+q(eventId):'')+'&order='+set[2]+'&limit=200&offset='+offset);
+   if(scoped){
+    const event=await getEvent(eventId),now=Date.now();
+    return json({rows:rows.map(({preview_key,...row})=>{const preview=publicPhoto({...row,preview_key},event?.published===true&&row.event_id===eventId&&row.status==='ready',now);return {...row,preview:preview.preview,preview_fallback:preview.preview_fallback,preview_expires_at:preview.preview_expires_at};}),next:rows.length===200?offset+200:null});
+   }
    return json({rows,next:rows.length===200?offset+200:null});
   }
   if(id==='customer'&&req.method==='POST'){

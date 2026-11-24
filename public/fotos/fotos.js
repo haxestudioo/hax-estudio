@@ -149,12 +149,12 @@ function updateViewer(){
  lightId=p.id;
  viewerZoom=1;viewerPanX=0;viewerPanY=0;viewerTouch=null;renderZoom();
  const image=$('#large-photo');
- image.onload=()=>{$('#lightbox').classList.toggle('is-portrait',image.naturalHeight>image.naturalWidth);};
+ image.onload=()=>{$('#lightbox').classList.toggle('is-portrait',image.naturalHeight>image.naturalWidth);if(!event?.preview_only)$('#viewer-blur').style.backgroundImage='url("'+image.src.replace(/["\\]/g,'')+'")';};
  $('#lightbox').classList.remove('is-portrait');
  image.dataset.previewFallback=p.preview_fallback||'/api/fotos/preview/'+p.id;delete image.dataset.previewRetried;image.referrerPolicy='no-referrer';image.src=photoSource(p);
  if(image.complete&&image.naturalWidth)$('#lightbox').classList.toggle('is-portrait',image.naturalHeight>image.naturalWidth);
  image.alt='Foto '+(lightIndex+1)+' de '+photos.length+': '+p.filename;
- $('#viewer-blur').style.backgroundImage='none'; // avoid downloading the same image as a CSS background
+ if(image.complete&&image.naturalWidth&&!event?.preview_only)$('#viewer-blur').style.backgroundImage='url("'+image.src.replace(/["\\]/g,'')+'")';else $('#viewer-blur').style.backgroundImage='none';
  $('#light-title').textContent=p.filename;
  $('#light-position').textContent=(lightIndex+1)+' / '+photos.length;
  selectionLabel();
