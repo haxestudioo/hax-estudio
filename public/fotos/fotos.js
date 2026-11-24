@@ -9,7 +9,7 @@ function renderEvents(){
  const matching=events.filter(x=>[x.title,x.description,x.event_date].some(v=>String(v||'').toLocaleLowerCase('pt-BR').includes(term)));
  $('#events').innerHTML=matching.length?matching.map(e=>'<button class="event" data-event="'+e.id+'"><div class="event-image">'+(e.cover_photo_id?'<img loading="lazy" src="/api/fotos/preview/'+e.cover_photo_id+'" alt="">':'HAX')+'</div><div class="event-body"><small>'+escapeHTML(e.event_date?new Date(e.event_date+'T12:00:00').toLocaleDateString('pt-BR'):'GALERIA DISPONÍVEL')+'</small><h3>'+escapeHTML(e.title)+'</h3><span>VER FOTOGRAFIAS</span></div></button>').join(''):'<p class="muted">'+(term?'Nenhum evento encontrado. Tente outro nome.':'Novos eventos em breve.')+'</p>';
 }
-async function loadEvents(){try{const data=await api('events');events=data.events;$('#wa-consent').classList.toggle('hidden',data.whatsapp_available!==true);renderEvents();}catch(e){$('#events').textContent=e.message;}}
+async function loadEvents(){try{({events}=await api('events'));renderEvents();}catch(e){$('#events').textContent=e.message;}}
 function persistCart(){if(event)localStorage.setItem(savedCartKey(event.id),JSON.stringify([...selected]));}
 function updateCart(){const count=selected.size;$('#count').textContent=count;$('#sticky-count').textContent=count+' foto'+(count===1?'':'s');$('#sticky-total').textContent=event?fmt(count*event.price_cents):'';$('#sticky-cart').classList.toggle('hidden',!count||!!event?.preview_only);$('#checkout-button').disabled=!count||!!event?.preview_only;}
 function tiles(){
@@ -21,7 +21,7 @@ function cartOpen(){if(event?.preview_only){alert('Este evento está em rascunho
 function orderLink(){return location.origin+'/fotos/?pedido='+order.id+'&chave='+encodeURIComponent(order.token);}
 async function copyLink(){if(!order)return;const link=orderLink();try{await navigator.clipboard.writeText(link);notify('Link do pedido copiado. Guarde para acessar depois.');}catch{window.prompt('Copie e guarde o link do seu pedido:',link);}}
 function saveOrder(o){stopPolling();order=o;orderStatus=null;try{localStorage.setItem('hax-last-order',JSON.stringify(o));}catch{}history.replaceState({},'',location.pathname+'?pedido='+o.id+'&chave='+encodeURIComponent(o.token));}
-async function buyerSubmit(e){e.preventDefault();const button=$('#pay');button.disabled=true;notify('Gerando pagamento...');const form=new FormData(e.currentTarget);try{const data=await api('checkout',{method:'POST',body:JSON.stringify({eventId:event.id,photoIds:[...selected],name:String(form.get('name')).trim(),whatsapp:String(form.get('whatsapp')),email:String(form.get('email')).trim().toLowerCase(),waReceipt:form.has('waReceipt'),waReminder:form.has('waReminder')})});saveOrder({id:data.orderId,token:data.token});$('#buyer').classList.add('hidden');$('#payment').classList.remove('hidden');notify('');renderPix(data);await refreshOrder();startPolling();}catch(e){notify(e.message);}finally{button.disabled=false;}}
+async function buyerSubmit(e){e.preventDefault();const button=$('#pay');button.disabled=true;notify('Gerando pagamento...');const form=new FormData(e.currentTarget);try{const data=await api('checkout',{method:'POST',body:JSON.stringify({eventId:event.id,photoIds:[...selected],name:String(form.get('name')).trim(),whatsapp:String(form.get('whatsapp')),email:String(form.get('email')).trim().toLowerCase()})});saveOrder({id:data.orderId,token:data.token});$('#buyer').classList.add('hidden');$('#payment').classList.remove('hidden');notify('');renderPix(data);await refreshOrder();startPolling();}catch(e){notify(e.message);}finally{button.disabled=false;}}
 function renderPix(data){$('#pix-code').value=data.pix_code||'';$('#qr').classList.toggle('hidden',!data.pix_qr_base64);if(data.pix_qr_base64)$('#qr').src='data:image/png;base64,'+data.pix_qr_base64;$('#payment-status').textContent='Pix gerado. Pague pelo aplicativo do seu banco. A confirmação acontece automaticamente.';}
 function renderPurchased(items){
  const list=$('#download-list');list.replaceChildren();
@@ -69,6 +69,7 @@ async function refreshOrder(){
   stopPolling();
   $('#buyer').classList.add('hidden');$('#payment').classList.add('hidden');$('#approved').classList.remove('hidden');$('#checkout').classList.add('is-approved');$('#card-option').classList.add('hidden');$('#checkout-items').classList.add('hidden');
   $('#checkout-title').textContent='Fotos liberadas!';
+  updateSupportLink(active.id);
   if(previous!=='approved'){
    renderPurchased(d.items||[]);notify('');$('#checkout').scrollTop=0;
    const purchased=new Set((d.items||[]).map(i=>i.id));
@@ -217,5 +218,15 @@ $('#back').onclick=()=>{event=null;selected.clear();$('#gallery').classList.add(
 $('#checkout').addEventListener('close',stopPolling);window.addEventListener('focus',()=>{if(order&&$('#checkout').open&&orderStatus!=='approved')refreshOrder().catch(()=>{});});
 const params=new URLSearchParams(location.search);loadEvents().then(()=>{if(params.get('pedido')&&params.get('chave'))resume(params.get('pedido'),params.get('chave'));else{const id=location.hash.match(/evento=([0-9a-f-]+)/)?.[1];if(id)openEvent(id);}});
 
-// O WhatsApp para cartão acompanha o contato oficial configurado no painel institucional.
-fetch('/api/content',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(d=>{const n=String(d?.content?.site?.whatsapp||'').replace(/\D/g,'');if(/^55\d{10,11}$/.test(n))$('#card-option a').href='https://wa.me/'+n+'?text='+encodeURIComponent('Olá! Gostaria de pagar minhas fotos com cartão.');}).catch(()=>{});
+// Contato manual, sem API do WhatsApp. Nunca incluir o token secreto do pedido na mensagem.
+let shopPhone='5544991855451';
+function updateSupportLink(orderId){
+ const message='Olá! Meu pagamento na HAX Fotos foi confirmado, mas preciso de ajuda para baixar minhas fotos.'+(orderId?' Pedido: '+orderId+'.':'');
+ $('#download-support-whatsapp').href='https://wa.me/'+shopPhone+'?text='+encodeURIComponent(message);
+}
+fetch('/api/content',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(d=>{
+ const n=String(d?.content?.site?.whatsapp||'').replace(/\D/g,'');
+ if(/^55\d{10,11}$/.test(n))shopPhone=n;
+ $('#card-option a').href='https://wa.me/'+shopPhone+'?text='+encodeURIComponent('Olá! Gostaria de pagar minhas fotos com cartão.');
+ if(orderStatus==='approved'&&order)updateSupportLink(order.id);
+}).catch(()=>{});

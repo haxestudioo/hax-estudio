@@ -21,6 +21,10 @@ test('formulário inclui nome, WhatsApp e e-mail conforme Mercado Pago',()=>{
  assert.equal(document.querySelector('input[name=email]')?.type,'email');
  assert.ok(document.querySelector('input[name=name]'));
  assert.ok(document.querySelector('input[name=whatsapp]'));
+ assert.equal(document.querySelector('input[name=waReceipt]'),null);
+ assert.equal(document.querySelector('input[name=waReminder]'),null);
+ assert.ok(document.querySelector('#approved.hidden #download-support-whatsapp'));
+ assert.ok(document.querySelector('#card-option a'));
  assert.ok(document.querySelector('#light-prev'));
  assert.ok(document.querySelector('#light-next'));
  assert.ok(document.querySelector('#zoom-in'));
@@ -142,4 +146,15 @@ test('pedido aprovado recuperado mostra originais e botões de download, não a 
   document.querySelector('.purchased-image img').dispatchEvent(new window.Event('error'));
   assert.equal(document.querySelector('.purchased-image-error').classList.contains('hidden'),false);
  }finally{window.close();}
+});
+
+test('suporte manual aparece só depois da aprovação e não compartilha o token do pedido',async()=>{
+ const token='private-order-token-never-share-123456789';
+ const dom=new JSDOM(html,{url:'https://example.org/fotos/?pedido='+id+'&chave='+token,runScripts:'outside-only',pretendToBeVisual:true});
+ const {window}=dom,document=window.document;window.HTMLDialogElement.prototype.showModal=function(){this.open=true;};window.HTMLDialogElement.prototype.close=function(){this.open=false;};
+ let status='pending';
+ const download='/api/fotos/download/'+p1+'?pedido='+id+'&chave='+token;
+ window.fetch=async url=>{const p=String(url);if(p==='/api/content')return {ok:true,json:async()=>({content:{site:{whatsapp:'5544991234567'}}})};if(p==='/api/fotos/events')return {ok:true,json:async()=>({events:[]})};if(p==='/api/fotos/order/'+id)return {ok:true,json:async()=>({id,event_id:id,status,items:status==='approved'?[{id:p1,name:'Foto.jpg',download,original:download+'&modo=visualizar'}]:[]})};throw Error('Unexpected test request '+p);};
+ try{window.eval(js);await new Promise(r=>setTimeout(r,25));assert.ok(document.querySelector('#approved').classList.contains('hidden'));assert.equal(document.querySelector('#card-option').classList.contains('hidden'),false);
+ status='approved';window.dispatchEvent(new window.Event('focus'));await new Promise(r=>setTimeout(r,25));assert.equal(document.querySelector('#approved').classList.contains('hidden'),false);assert.ok(document.querySelector('#card-option').classList.contains('hidden'));const url=new URL(document.querySelector('#download-support-whatsapp').href);assert.equal(url.hostname,'wa.me');assert.equal(url.pathname,'/5544991234567');assert.match(url.searchParams.get('text'),/preciso de ajuda/);assert.ok(url.searchParams.get('text').includes(id));assert.ok(!url.searchParams.get('text').includes(token));assert.ok(document.querySelector('.purchased-download'));}finally{window.close();}
 });
