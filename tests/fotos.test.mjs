@@ -92,6 +92,8 @@ test('PIX de produção: seleção → pedido pendente → bloqueio → aprovaç
  assert.equal(other.status,403);
  const wrongView=await handler(req('/api/fotos/download/'+idPhoto+'?pedido='+idOrder+'&chave=invalid-token-value-very-long-abc12345&modo=visualizar'));
  assert.equal(wrongView.status,403);
+ process.env.WA_DELIVERY_SECRET='only-a-test-delivery-secret-32-characters';
+ try{const {deliveryToken}=await import('../netlify/lib/fotos-whatsapp.mjs');const wa=deliveryToken(idOrder);const allowed=await handler(req('/api/fotos/order/'+idOrder,{token:wa}));assert.equal(allowed.status,200);state.order.status='pending';const pendingWa=await handler(req('/api/fotos/order/'+idOrder,{token:wa}));assert.equal(pendingWa.status,403);state.order.status='approved';}finally{delete process.env.WA_DELIVERY_SECRET;}
 });
 test('checkout recusa e-mail inválido antes de criar pagamento',async()=>{
  const before=state.lastPaymentPayload;

@@ -9,7 +9,7 @@ function renderEvents(){
  const matching=events.filter(x=>[x.title,x.description,x.event_date].some(v=>String(v||'').toLocaleLowerCase('pt-BR').includes(term)));
  $('#events').innerHTML=matching.length?matching.map(e=>'<button class="event" data-event="'+e.id+'"><div class="event-image">'+(e.cover_photo_id?'<img loading="lazy" src="/api/fotos/preview/'+e.cover_photo_id+'" alt="">':'HAX')+'</div><div class="event-body"><small>'+escapeHTML(e.event_date?new Date(e.event_date+'T12:00:00').toLocaleDateString('pt-BR'):'GALERIA DISPONÍVEL')+'</small><h3>'+escapeHTML(e.title)+'</h3><span>VER FOTOGRAFIAS</span></div></button>').join(''):'<p class="muted">'+(term?'Nenhum evento encontrado. Tente outro nome.':'Novos eventos em breve.')+'</p>';
 }
-async function loadEvents(){try{({events}=await api('events'));renderEvents();}catch(e){$('#events').textContent=e.message;}}
+async function loadEvents(){try{const data=await api('events');events=data.events;$('#wa-consent').classList.toggle('hidden',data.whatsapp_available!==true);renderEvents();}catch(e){$('#events').textContent=e.message;}}
 function persistCart(){if(event)localStorage.setItem(savedCartKey(event.id),JSON.stringify([...selected]));}
 function updateCart(){const count=selected.size;$('#count').textContent=count;$('#sticky-count').textContent=count+' foto'+(count===1?'':'s');$('#sticky-total').textContent=event?fmt(count*event.price_cents):'';$('#sticky-cart').classList.toggle('hidden',!count||!!event?.preview_only);$('#checkout-button').disabled=!count||!!event?.preview_only;}
 function tiles(){

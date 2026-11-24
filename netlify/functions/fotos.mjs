@@ -1,4 +1,4 @@
-import {deliveryToken,registerConsent,normalizePhone,whatsappConfigured} from '../lib/fotos-whatsapp.mjs';
+import {deliveryToken,registerConsent,normalizePhone,whatsappConfigured,enabled as whatsappEnabled} from '../lib/fotos-whatsapp.mjs';
 import {randomUUID,randomBytes,createHash,createHmac,timingSafeEqual} from 'node:crypto';
 import {signR2,headR2,readR2} from '../lib/r2.mjs';
 import {authenticated,sameOrigin,json,env} from '../lib/security.mjs';
@@ -109,7 +109,7 @@ async function handler(req){
  }
  if(kind==='events'&&req.method==='GET'){
   const events=await list('hax_events','?published=eq.true&select=id,title,slug,description,event_date,price_cents,cover_photo_id&order=event_date.desc.nullslast');
-  return json({events});
+  return json({events,whatsapp_available:whatsappEnabled()});
  }
  if(kind==='event'&&req.method==='GET'){
   if(!uuid(id))throw err('Evento inválido.');
@@ -156,7 +156,7 @@ async function handler(req){
   }
   const qr=payment.point_of_interaction?.transaction_data||{};
   await change('hax_orders','?id=eq.'+q(orderId),{payment_id:String(payment.id),payment_status:payment.status||'pending',pix_code:qr.qr_code||null,pix_qr_base64:qr.qr_code_base64||null,expires_at:payment.date_of_expiration||null});
-  if(qr.qr_code&&(body.waReceipt===true||body.waReminder===true)){
+  if(whatsappEnabled()&&qr.qr_code&&(body.waReceipt===true||body.waReminder===true)){
    try{await registerConsent({orderId,phone:normalizePhone(whatsapp),receipt:body.waReceipt===true,reminder:body.waReminder===true});}
    catch{console.error('HAX WhatsApp: consentimento não registrado; checkout preservado.');}
   }
