@@ -1,6 +1,7 @@
 import {randomUUID,randomBytes,createHash,createHmac,timingSafeEqual} from 'node:crypto';
 import {signR2,headR2,readR2} from '../lib/r2.mjs';
 import {authenticated,sameOrigin,json,env} from '../lib/security.mjs';
+import {directPreviewsEnabled,isPreviewKey,previewLink} from '../lib/fotos-previews.mjs';
 
 const hash=x=>createHash('sha256').update(x).digest('hex');
 const err=(message,status=400)=>Object.assign(new Error(message),{status});
@@ -32,7 +33,22 @@ async function authorizedOrder(req,id){
 }
 function safeName(s,max=120){return String(s||'').replace(/[<>\r\n]/g,'').trim().slice(0,max);}
 function publicEvent(e){return {id:e.id,title:e.title,slug:e.slug,description:e.description,event_date:e.event_date,price_cents:e.price_cents,cover_photo_id:e.cover_photo_id};}
-function publicPhoto(p){return {id:p.id,event_id:p.event_id,filename:p.filename,preview:'/api/fotos/preview/'+p.id};}
+function publicPhoto(p,published=false,now=Date.now()){
+ const fallback='/api/fotos/preview/'+p.id;
+ const signed=published?previewLink(p.preview_key,now):null;
+ return {id:p.id,event_id:p.event_id,filename:p.filename,preview:signed?.url||fallback,preview_fallback:fallback,preview_expires_at:signed?.expires_at||null};
+}
+async function galleryPhotos(id){
+ // PostgREST may cap a single result at 1000. Walk deterministic pages so
+ // old saved carts and lightbox navigation work for every photo, not just page one.
+ const photos=[];let offset=0;
+ for(;;){
+  const page=await list('hax_photos','?event_id=eq.'+q(id)+'&status=eq.ready&select=id,event_id,filename,preview_key&order=created_at.asc,id.asc&limit=500&offset='+offset);
+  photos.push(...page);
+  if(page.length<500)return photos;
+  offset+=page.length;
+ }
+}
 async function getEvent(id){return single('hax_events','?id=eq.'+q(id)+'&select=*');}
 function paymentNotificationUrl(){
  const context=env('CONTEXT');
@@ -73,13 +89,14 @@ async function checkOrderPayment(order){
  if(!order.payment_id)return order;
  try{return await syncPayment(order,await getPayment(order.payment_id));}catch(e){console.error('Payment reconcile',e.message);return order;}
 }
-async function serveR2(key,type,name,download=false){
+async function serveR2(key,type,name,download=false,privatePreview=false){
  const obj=await readR2(key);
  const stream=obj.body;
  if(!stream)throw err('Arquivo não disponível.',404);
  const h={...noCache,'Content-Type':type||'application/octet-stream'};
  if(download)h['Content-Disposition']='attachment; filename*=UTF-8\'\''+encodeURIComponent(name||'foto.jpg');
- else h['Cache-Control']='public,max-age=300,s-maxage=3600';
+ else if(!privatePreview)h['Cache-Control']='public,max-age=120,s-maxage=120';
+ if(privatePreview)h['Vary']='Cookie';
  return new Response(stream,{status:200,headers:h});
 }
 function originalDisposition(name,inline){
@@ -102,20 +119,36 @@ async function handler(req){
  }
  if(kind==='events'&&req.method==='GET'){
   const events=await list('hax_events','?published=eq.true&select=id,title,slug,description,event_date,price_cents,cover_photo_id&order=event_date.desc.nullslast');
-  return json({events});
+  // Batch covers: one small metadata read per 100 events, no image transfer.
+  const covers=events.filter(e=>uuid(e.cover_photo_id)).map(e=>e.cover_photo_id),byId=new Map();
+  if(directPreviewsEnabled())for(let i=0;i<covers.length;i+=100){
+   const page=await list('hax_photos','?id=in.('+covers.slice(i,i+100).map(q).join(',')+')&status=eq.ready&select=id,event_id,status,preview_key');
+   for(const photo of page)if(photo.status==='ready')byId.set(photo.id,photo);
+  }
+  const now=Date.now();
+  return json({events:events.map(e=>{
+   const cover=byId.get(e.cover_photo_id);
+   const preview=cover?.event_id===e.id?publicPhoto(cover,true,now):null;
+   return {...publicEvent(e),cover_preview:preview?.preview||null,cover_preview_expires_at:preview?.preview_expires_at||null};
+  })});
  }
  if(kind==='event'&&req.method==='GET'){
   if(!uuid(id))throw err('Evento inválido.');
   const event=await getEvent(id);if(!event||(event.published!==true&&!authenticated(req)))throw err('Evento não encontrado.',404);
-  const photos=await list('hax_photos','?event_id=eq.'+q(id)+'&status=eq.ready&select=id,event_id,filename&order=created_at.asc&limit=2000');
-  return json({event:{...publicEvent(event),preview_only:!event.published},photos:photos.map(publicPhoto)});
+  const photos=await galleryPhotos(id),now=Date.now();
+  return json({event:{...publicEvent(event),preview_only:!event.published},photos:photos.map(p=>publicPhoto(p,event.published===true,now))});
  }
  if(kind==='preview'&&req.method==='GET'){
   if(!uuid(id))throw err('Imagem inválida.',404);
   const photo=await single('hax_photos','?id=eq.'+q(id)+'&status=eq.ready&select=id,event_id,preview_key');
   if(!photo)throw err('Imagem não encontrada.',404);
   const event=await getEvent(photo.event_id);if(!event?.published&&!authenticated(req))throw err('Imagem indisponível.',404);
-  return serveR2(photo.preview_key,'image/webp','preview.webp');
+  if(!isPreviewKey(photo.preview_key))throw err('Imagem indisponível.',404);
+  // Old URLs still work. They recheck visibility before issuing a direct link.
+  // Drafts stay same-origin and private; the bucket is never public.
+  const signed=event?.published===true?previewLink(photo.preview_key):null;
+  if(signed)return new Response(null,{status:302,headers:{Location:signed.url,...noCache,'Referrer-Policy':'no-referrer'}});
+  return serveR2(photo.preview_key,'image/webp','preview.webp',false,event?.published!==true);
  }
  if(kind==='checkout'&&req.method==='POST'){
   checkOrigin(req);required('MP_ACCESS_TOKEN');required('MP_WEBHOOK_SECRET');
@@ -154,6 +187,7 @@ async function handler(req){
  if(kind==='order'&&req.method==='GET'){
   let order=await authorizedOrder(req,id);
   if(order.status==='pending')order=await checkOrderPayment(order);
+  if(req.headers.get('x-hax-status-only')==='1'&&order.status!=='approved')return json({id:order.id,status:order.status,expires_at:order.expires_at});
   const items=await filesForOrder(order.id);
    return json({id:order.id,event_id:order.event_id,status:order.status,total_cents:order.total_cents,created_at:order.created_at,paid_at:order.paid_at,pix_code:order.pix_code,pix_qr_base64:order.pix_qr_base64,expires_at:order.expires_at,items:items.map(i=>{
     const download=order.status==='approved'?'/api/fotos/download/'+i.photo_id+'?pedido='+order.id+'&chave='+encodeURIComponent(access(req)):null;
