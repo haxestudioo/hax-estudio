@@ -47,7 +47,7 @@ globalThis.fetch=async (input,options={})=>{
    if(method==='PATCH'){Object.assign(state.order,body);return json([state.order]);}
    return json(state.order?[state.order]:[]);
   }
-  if(path==='/rest/v1/hax_order_items')return json(state.item?[state.item]:[]);
+  if(path==='/rest/v1/hax_order_items')return json(state.item&&(!url.searchParams.has('photo_id')||url.searchParams.get('photo_id')==='eq.'+state.item.photo_id)?[state.item]:[]);
   throw Error('Rota Supabase não simulada: '+path);
  }
  if(url.hostname.endsWith('.r2.cloudflarestorage.com') && method==='GET')return new Response('<Error><Code>NoSuchKey</Code><Message>The specified key does not exist.</Message></Error>',{status:404,headers:{'Content-Type':'application/xml'}});
@@ -68,9 +68,11 @@ test('PIX de produção: seleção → pedido pendente → bloqueio → aprovaç
  assert.equal(Object.hasOwn(state.lastPaymentPayload.payer,'whatsapp'),false);
  assert.ok(created.token.length>32);
  const before=await handler(req('/api/fotos/order/'+idOrder,{token:created.token}));
- assert.equal((await before.json()).status,'pending');
+ const pending=await before.json();assert.equal(pending.status,'pending');assert.equal(pending.items[0].download,null);assert.equal(pending.items[0].original,null);
  const forbidden=await handler(req('/api/fotos/download/'+idPhoto+'?pedido='+idOrder+'&chave='+encodeURIComponent(created.token)));
  assert.equal(forbidden.status,403);
+ const pendingView=await handler(req('/api/fotos/download/'+idPhoto+'?pedido='+idOrder+'&chave='+encodeURIComponent(created.token)+'&modo=visualizar'));
+ assert.equal(pendingView.status,403);
  const wrong=await handler(req('/api/fotos/order/'+idOrder,{token:'invalid-token-value-very-long-abc12345'}));
  assert.equal(wrong.status,403);
  state.mpStatus='approved';
@@ -79,6 +81,17 @@ test('PIX de produção: seleção → pedido pendente → bloqueio → aprovaç
  const original=await handler(req('/api/fotos/download/'+idPhoto+'?pedido='+idOrder+'&chave='+encodeURIComponent(created.token)));
  assert.equal(original.status,302);assert.match(original.headers.get('Location'),/r2\.cloudflarestorage\.com/);
  assert.match(original.headers.get('Location'),/X-Amz-Signature=/);
+ const signed=new URL(original.headers.get('Location'));
+ assert.match(signed.searchParams.get('response-content-disposition'),/^attachment; filename="original.jpg"/);
+ assert.equal(signed.searchParams.get('X-Amz-Expires'),'600');
+ assert.equal(signed.searchParams.get('response-cache-control'),'private, no-store');
+ assert.equal(original.headers.get('Cache-Control'),'private, no-store');
+ const view=await handler(req(details.items[0].original));
+ assert.equal(view.status,302);assert.match(new URL(view.headers.get('Location')).searchParams.get('response-content-disposition'),/^inline;/);
+ const other=await handler(req('/api/fotos/download/'+idOther+'?pedido='+idOrder+'&chave='+encodeURIComponent(created.token)+'&modo=visualizar'));
+ assert.equal(other.status,403);
+ const wrongView=await handler(req('/api/fotos/download/'+idPhoto+'?pedido='+idOrder+'&chave=invalid-token-value-very-long-abc12345&modo=visualizar'));
+ assert.equal(wrongView.status,403);
 });
 test('checkout recusa e-mail inválido antes de criar pagamento',async()=>{
  const before=state.lastPaymentPayload;

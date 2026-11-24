@@ -113,3 +113,33 @@ test('busca de eventos e navegação das fotos por botão e gesto',async()=>{
  window.clearInterval?.(0);
  window.close();
 });
+
+test('pedido aprovado recuperado mostra originais e botões de download, não a tela Pix',async()=>{
+ const token='test-token-for-approved-order-1234567890';
+ const download='/api/fotos/download/'+p1+'?pedido='+id+'&chave='+token;
+ const original=download+'&modo=visualizar';
+ const dom=new JSDOM(html,{url:'https://example.org/fotos/?pedido='+id+'&chave='+token,runScripts:'outside-only',pretendToBeVisual:true});
+ const {window}=dom,document=window.document;
+ window.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
+ window.HTMLDialogElement.prototype.close=function(){this.open=false;};
+ window.fetch=async(url)=>{
+  const path=String(url).replace('/api/fotos/','');
+  if(path==='events')return {ok:true,json:async()=>({events:[]})};
+  if(path==='order/'+id)return {ok:true,json:async()=>({id,event_id:id,status:'approved',items:[{id:p1,name:'Original.jpg',download,original}]})};
+  throw Error('Unexpected test request '+path);
+ };
+ try{
+  window.eval(js);await new Promise(resolve=>setTimeout(resolve,30));
+  assert.equal(document.querySelector('#checkout').open,true);
+  assert.equal(document.querySelector('#checkout-title').textContent,'Fotos liberadas!');
+  assert.equal(document.querySelector('#approved').classList.contains('hidden'),false);
+  assert.equal(document.querySelector('#payment').classList.contains('hidden'),true);
+  assert.equal(document.querySelector('#checkout-items').classList.contains('hidden'),true);
+  assert.equal(document.querySelector('.purchased-image img').getAttribute('src'),original);
+  assert.equal(document.querySelector('.purchased-download').getAttribute('href'),download);
+  assert.match(document.querySelector('.purchased-download').textContent,/BAIXAR FOTO/);
+  assert.equal(document.querySelector('.purchased-alternatives a').getAttribute('href'),download);
+  document.querySelector('.purchased-image img').dispatchEvent(new window.Event('error'));
+  assert.equal(document.querySelector('.purchased-image-error').classList.contains('hidden'),false);
+ }finally{window.close();}
+});
