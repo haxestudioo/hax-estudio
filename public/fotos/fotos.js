@@ -1,5 +1,5 @@
 const $=s=>document.querySelector(s),fmt=c=>(c/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-let events=[],event=null,photos=[],selected=new Set(),lightId=null,lightIndex=-1,order=null,poll=null;
+let events=[],event=null,photos=[],selected=new Set(),lightId=null,lightIndex=-1,order=null,poll=null,orderStatus=null;
 const savedCartKey=id=>'hax-cart-'+id;
 function escapeHTML(x){return String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 async function api(path,options={}){const r=await fetch('/api/fotos/'+path,{...options,headers:{...(options.body?{'Content-Type':'application/json'}:{}),...(options.headers||{})},cache:'no-store'});const b=await r.json();if(!r.ok)throw Error(b.error||'Falha na operação.');return b;}
@@ -17,15 +17,76 @@ function tiles(){
 }
 function select(id){selected.has(id)?selected.delete(id):selected.add(id);persistCart();tiles();updateCart();}
 async function openEvent(id){try{const data=await api('event/'+id);event=data.event;photos=data.photos;const all=new Set(photos.map(p=>p.id));try{selected=new Set(JSON.parse(localStorage.getItem(savedCartKey(id))||'[]').filter(i=>all.has(i)));}catch{selected=new Set();}$('#event-title').textContent=event.title;$('#event-description').textContent=event.description||'';$('#draft-preview').classList.toggle('hidden',!event.preview_only);$('#photo-total').textContent=photos.length+' fotografias';$('#unit-price').textContent=fmt(event.price_cents)+' por foto';$('#gallery').classList.remove('hidden');$('#events').closest('section').classList.add('hidden');tiles();updateCart();history.replaceState({},'',location.pathname+'#evento='+id);$('#gallery').scrollIntoView({behavior:'smooth'});}catch(e){alert(e.message);}}
-function cartOpen(){if(event?.preview_only){alert('Este evento está em rascunho. Publique no painel para habilitar compras.');return;}if(!selected.size){alert('Selecione uma ou mais fotos primeiro.');return;}$('#checkout-title').textContent='Finalizar pedido';$('#buyer').classList.remove('hidden');$('#payment').classList.add('hidden');$('#approved').classList.add('hidden');const list=photos.filter(p=>selected.has(p.id));$('#checkout-items').innerHTML='<div><strong>'+list.length+' fotografia(s)</strong><strong>'+fmt(list.length*event.price_cents)+'</strong></div><p class="sub">'+list.map(p=>escapeHTML(p.filename)).join(' · ')+'</p>';notify('');$('#checkout').showModal();}
+function cartOpen(){if(event?.preview_only){alert('Este evento está em rascunho. Publique no painel para habilitar compras.');return;}if(!selected.size){alert('Selecione uma ou mais fotos primeiro.');return;}stopPolling();order=null;orderStatus=null;$('#checkout').classList.remove('is-approved');$('#checkout-items').classList.remove('hidden');$('#checkout-title').textContent='Finalizar pedido';$('#buyer').classList.remove('hidden');$('#payment').classList.add('hidden');$('#approved').classList.add('hidden');const list=photos.filter(p=>selected.has(p.id));$('#checkout-items').innerHTML='<div><strong>'+list.length+' fotografia(s)</strong><strong>'+fmt(list.length*event.price_cents)+'</strong></div><p class="sub">'+list.map(p=>escapeHTML(p.filename)).join(' · ')+'</p>';notify('');$('#checkout').showModal();}
 function orderLink(){return location.origin+'/fotos/?pedido='+order.id+'&chave='+encodeURIComponent(order.token);}
-function copyLink(){navigator.clipboard.writeText(orderLink()).then(()=>notify('Link do pedido copiado. Guarde para acessar depois.'),()=>notify('Não foi possível copiar automaticamente.'));}
-function saveOrder(o){order=o;localStorage.setItem('hax-last-order',JSON.stringify(o));history.replaceState({},'',location.pathname+'?pedido='+o.id+'&chave='+encodeURIComponent(o.token));}
+async function copyLink(){if(!order)return;const link=orderLink();try{await navigator.clipboard.writeText(link);notify('Link do pedido copiado. Guarde para acessar depois.');}catch{window.prompt('Copie e guarde o link do seu pedido:',link);}}
+function saveOrder(o){stopPolling();order=o;orderStatus=null;try{localStorage.setItem('hax-last-order',JSON.stringify(o));}catch{}history.replaceState({},'',location.pathname+'?pedido='+o.id+'&chave='+encodeURIComponent(o.token));}
 async function buyerSubmit(e){e.preventDefault();const button=$('#pay');button.disabled=true;notify('Gerando pagamento...');const form=new FormData(e.currentTarget);try{const data=await api('checkout',{method:'POST',body:JSON.stringify({eventId:event.id,photoIds:[...selected],name:String(form.get('name')).trim(),whatsapp:String(form.get('whatsapp')),email:String(form.get('email')).trim().toLowerCase()})});saveOrder({id:data.orderId,token:data.token});$('#buyer').classList.add('hidden');$('#payment').classList.remove('hidden');notify('');renderPix(data);await refreshOrder();startPolling();}catch(e){notify(e.message);}finally{button.disabled=false;}}
 function renderPix(data){$('#pix-code').value=data.pix_code||'';$('#qr').classList.toggle('hidden',!data.pix_qr_base64);if(data.pix_qr_base64)$('#qr').src='data:image/png;base64,'+data.pix_qr_base64;$('#payment-status').textContent='Pix gerado. Pague pelo aplicativo do seu banco. A confirmação acontece automaticamente.';}
-async function refreshOrder(){if(!order)return;const d=await api('order/'+order.id,{headers:{'x-hax-order-token':order.token}});if(d.status==='approved'){clearInterval(poll);poll=null;$('#buyer').classList.add('hidden');$('#payment').classList.add('hidden');$('#approved').classList.remove('hidden');$('#checkout-title').textContent='Fotos liberadas!';$('#download-list').innerHTML=d.items.map(i=>'<a href="'+i.download+'" download rel="noreferrer">'+escapeHTML(i.name)+' <strong>BAIXAR ORIGINAL ↓</strong></a>').join('');notify('');localStorage.removeItem(savedCartKey(event?.id));selected.clear();updateCart();}else{$('#approved').classList.add('hidden');$('#payment').classList.remove('hidden');if(d.pix_code)renderPix(d);$('#payment-status').textContent=d.status==='pending'?'Aguardando confirmação do Pix. Seus arquivos estão reservados no pedido.':'Pagamento: '+d.status+'. Em caso de dúvida, fale com a HAX Estúdio.';}return d;}
-function startPolling(){if(poll)clearInterval(poll);poll=setInterval(()=>{if(order&&document.visibilityState==='visible')refreshOrder().catch(()=>{})},9000);}
-async function resume(id,token){if(!id||!token)return;saveOrder({id,token});$('#checkout').showModal();$('#checkout-title').textContent='Seu pedido';$('#buyer').classList.add('hidden');$('#payment').classList.remove('hidden');$('#approved').classList.add('hidden');notify('Consultando seu pedido...');try{await refreshOrder();startPolling();}catch(e){notify(e.message);}}
+function renderPurchased(items){
+ const list=$('#download-list');list.replaceChildren();
+ if(!items.length){list.textContent='Não encontramos os arquivos deste pedido. Fale com a HAX Estúdio; não é necessário pagar novamente.';return;}
+ items.forEach(item=>{
+  if(!item.download)return;
+  const card=document.createElement('article');card.className='purchased-photo';
+  const original=item.original||item.download+'&modo=visualizar';
+  const imageLink=document.createElement('a');imageLink.className='purchased-image';imageLink.href=original;imageLink.target='_blank';imageLink.rel='noopener noreferrer';imageLink.setAttribute('aria-label','Abrir foto original '+item.name);
+  const image=document.createElement('img');image.alt=item.name;image.loading='lazy';image.decoding='async';image.referrerPolicy='no-referrer';
+  const imageError=document.createElement('span');imageError.className='purchased-image-error hidden';imageError.textContent='Não foi possível carregar a foto. Toque aqui para abrir o original.';
+  image.addEventListener('error',()=>{image.classList.add('hidden');imageError.classList.remove('hidden');});
+  image.src=original;imageLink.append(image,imageError);
+  const details=document.createElement('div');details.className='purchased-details';
+  const name=document.createElement('span');name.className='purchased-name';name.textContent=item.name;
+  const download=document.createElement('a');download.className='primary purchased-download';download.href=item.download;download.rel='noreferrer';download.textContent='↓ BAIXAR FOTO';
+  const alternatives=document.createElement('div');alternatives.className='purchased-alternatives';
+  const direct=document.createElement('a');direct.href=item.download;direct.rel='noreferrer';direct.textContent='Download direto';
+  const open=document.createElement('a');open.href=original;open.target='_blank';open.rel='noopener noreferrer';open.textContent='Abrir foto original';
+  const message=document.createElement('p');message.className='purchased-message';message.setAttribute('role','status');
+  download.addEventListener('click',async e=>{
+   if(typeof URL.createObjectURL!=='function')return;
+   e.preventDefault();if(download.getAttribute('aria-busy')==='true')return;
+   download.setAttribute('aria-busy','true');download.textContent='PREPARANDO FOTO…';message.textContent='';
+   try{
+    const response=await fetch(original,{cache:'no-store',referrerPolicy:'no-referrer'});
+    if(!response.ok)throw Error('Arquivo indisponível');
+    const blob=await response.blob();if(!blob.size||(!blob.type.startsWith('image/')&&blob.type!=='application/octet-stream'&&blob.type!==''))throw Error('Arquivo inválido');
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement('a');link.href=url;link.download=item.name||'foto.jpg';document.body.append(link);link.click();link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+    message.textContent='Se o arquivo não aparecer nos downloads, use Download direto ou Abrir foto original.';
+   }catch{message.textContent='Não foi possível baixar automaticamente. Tente Download direto ou abra a foto original e salve pelo navegador.';}
+   finally{download.removeAttribute('aria-busy');download.textContent='↓ BAIXAR FOTO';}
+  });
+  alternatives.append(direct,open);details.append(name,download,alternatives,message);card.append(imageLink,details);list.append(card);
+ });
+}
+async function refreshOrder(){
+ if(!order)return;const active=order;
+ const d=await api('order/'+active.id,{headers:{'x-hax-order-token':active.token}});
+ if(order!==active)return;
+ const previous=orderStatus;orderStatus=d.status;
+ if(d.status==='approved'){
+  stopPolling();
+  $('#buyer').classList.add('hidden');$('#payment').classList.add('hidden');$('#approved').classList.remove('hidden');$('#checkout').classList.add('is-approved');$('#checkout-items').classList.add('hidden');
+  $('#checkout-title').textContent='Fotos liberadas!';
+  if(previous!=='approved'){
+   renderPurchased(d.items||[]);notify('');$('#checkout').scrollTop=0;
+   const purchased=new Set((d.items||[]).map(i=>i.id));
+   if(d.event_id){
+    try{const key=savedCartKey(d.event_id);const remaining=JSON.parse(localStorage.getItem(key)||'[]').filter(id=>!purchased.has(id));if(remaining.length)localStorage.setItem(key,JSON.stringify(remaining));else localStorage.removeItem(key);}catch{}
+    if(event?.id===d.event_id){selected=new Set([...selected].filter(id=>!purchased.has(id)));tiles();updateCart();}
+   }
+  }
+ }else{
+  $('#approved').classList.add('hidden');$('#checkout').classList.remove('is-approved');$('#payment').classList.remove('hidden');
+  if(d.pix_code)renderPix(d);
+  $('#payment-status').textContent=d.status==='pending'?'Aguardando confirmação do Pix. Seus arquivos estão reservados no pedido.':'Pagamento: '+d.status+'. Em caso de dúvida, fale com a HAX Estúdio.';
+ }
+ return d;
+}
+function stopPolling(){if(poll)clearInterval(poll);poll=null;}
+function startPolling(){stopPolling();if(!order||!$('#checkout').open||orderStatus==='approved')return;poll=setInterval(()=>{if(order&&document.visibilityState==='visible')refreshOrder().catch(()=>{})},9000);}
+async function resume(id,token){if(!id||!token)return;saveOrder({id,token});$('#checkout').classList.remove('is-approved');$('#checkout-items').classList.add('hidden');$('#download-list').replaceChildren();if(!$('#checkout').open)$('#checkout').showModal();$('#checkout-title').textContent='Seu pedido';$('#buyer').classList.add('hidden');$('#payment').classList.remove('hidden');$('#approved').classList.add('hidden');notify('Consultando seu pedido...');try{await refreshOrder();startPolling();}catch(e){notify(e.message);}}
 function recover(){let last;try{last=JSON.parse(localStorage.getItem('hax-last-order')||'null');}catch{}if(last?.id&&last?.token){resume(last.id,last.token);return;}const url=prompt('Cole aqui o link do seu pedido salvo ou recuperado:');if(!url)return;try{const u=new URL(url);if(u.origin!==location.origin)throw Error('Link inválido.');resume(u.searchParams.get('pedido'),u.searchParams.get('chave'));}catch{alert('Link inválido. Contate a HAX Estúdio e informe seu nome e WhatsApp.');}}
 let viewerZoom=1,viewerPanX=0,viewerPanY=0,viewerTouch=null,lastTapAt=0;
 const clamp=(v,min,max)=>Math.min(max,Math.max(min,v));
@@ -153,5 +214,5 @@ $('#open-cart').onclick=cartOpen;$('#checkout-button').onclick=cartOpen;$('#even
 $('#buyer').onsubmit=buyerSubmit;$('#recover').onclick=recover;$('#copy-link').onclick=copyLink;$('#download-again').onclick=copyLink;
 $('#copy').onclick=()=>navigator.clipboard.writeText($('#pix-code').value).then(()=>notify('Código Pix copiado!'),()=>notify('Selecione o código e copie manualmente.'));
 $('#back').onclick=()=>{event=null;selected.clear();$('#gallery').classList.add('hidden');$('#events').closest('section').classList.remove('hidden');updateCart();history.replaceState({},'',location.pathname+'#eventos');$('#events').scrollIntoView();};
-$('#checkout').addEventListener('close',()=>{if(order)startPolling();});window.addEventListener('focus',()=>{if(order)refreshOrder().catch(()=>{});});
+$('#checkout').addEventListener('close',stopPolling);window.addEventListener('focus',()=>{if(order&&$('#checkout').open&&orderStatus!=='approved')refreshOrder().catch(()=>{});});
 const params=new URLSearchParams(location.search);loadEvents().then(()=>{if(params.get('pedido')&&params.get('chave'))resume(params.get('pedido'),params.get('chave'));else{const id=location.hash.match(/evento=([0-9a-f-]+)/)?.[1];if(id)openEvent(id);}});

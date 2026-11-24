@@ -82,6 +82,12 @@ async function serveR2(key,type,name,download=false){
  else h['Cache-Control']='public,max-age=300,s-maxage=3600';
  return new Response(stream,{status:200,headers:h});
 }
+function originalDisposition(name,inline){
+ const filename=String(name||'foto.jpg').replace(/[\r\n\x00-\x1f\x7f]/g,'_');
+ const ascii=filename.replace(/[^a-zA-Z0-9._ -]/g,'_')||'foto.jpg';
+ const encoded=encodeURIComponent(filename).replace(/[!'()*]/g,c=>'%'+c.charCodeAt(0).toString(16).toUpperCase());
+ return (inline?'inline':'attachment')+'; filename="'+ascii+'"; filename*=UTF-8'+"''"+encoded;
+}
 function filesForOrder(orderId){return list('hax_order_items','?order_id=eq.'+q(orderId)+'&select=photo_id,filename_snapshot,unit_price_cents&order=filename_snapshot.asc');}
 async function handler(req){
  const u=new URL(req.url),path=u.pathname.split('/').filter(Boolean),kind=path[2]||'',id=path[3]||'';
@@ -149,7 +155,10 @@ async function handler(req){
   let order=await authorizedOrder(req,id);
   if(order.status==='pending')order=await checkOrderPayment(order);
   const items=await filesForOrder(order.id);
-  return json({id:order.id,status:order.status,total_cents:order.total_cents,created_at:order.created_at,paid_at:order.paid_at,pix_code:order.pix_code,pix_qr_base64:order.pix_qr_base64,expires_at:order.expires_at,items:items.map(i=>({id:i.photo_id,name:i.filename_snapshot,download:order.status==='approved'?'/api/fotos/download/'+i.photo_id+'?pedido='+order.id+'&chave='+encodeURIComponent(access(req)):null}))});
+   return json({id:order.id,event_id:order.event_id,status:order.status,total_cents:order.total_cents,created_at:order.created_at,paid_at:order.paid_at,pix_code:order.pix_code,pix_qr_base64:order.pix_qr_base64,expires_at:order.expires_at,items:items.map(i=>{
+    const download=order.status==='approved'?'/api/fotos/download/'+i.photo_id+'?pedido='+order.id+'&chave='+encodeURIComponent(access(req)):null;
+    return {id:i.photo_id,name:i.filename_snapshot,download,original:download?download+'&modo=visualizar':null};
+   })});
  }
  if(kind==='download'&&req.method==='GET'){
   if(!uuid(id))throw err('Foto inválida.',400);
@@ -158,13 +167,15 @@ async function handler(req){
   let items,filename,key;
   if(admin&&!orderId){const p=await single('hax_photos','?id=eq.'+q(id)+'&select=original_key,filename');if(!p)throw err('Foto não encontrada.',404);key=p.original_key;filename=p.filename;}
   else{
-   const order=admin?await single('hax_orders','?id=eq.'+q(orderId)+'&select=*'):await authorizedOrder(req,orderId);
+   let order=admin?await single('hax_orders','?id=eq.'+q(orderId)+'&select=*'):await authorizedOrder(req,orderId);
+   if(!admin&&order?.status==='pending')order=await checkOrderPayment(order);
    if(!order||(!admin&&order.status!=='approved'))throw err('O arquivo será liberado após a confirmação do Pix.',403);
    items=await single('hax_order_items','?order_id=eq.'+q(orderId)+'&photo_id=eq.'+q(id)+'&select=original_key_snapshot,filename_snapshot');
    if(!items)throw err('Foto não pertence a este pedido.',403);key=items.original_key_snapshot;filename=items.filename_snapshot;
   }
   // URL assinada por prazo curto: download direto do R2 preserva arquivos grandes em resolução original.
-  return new Response(null,{status:302,headers:{Location:signR2('GET',key,120),'Cache-Control':'no-store','Referrer-Policy':'no-referrer'}});
+  const inline=u.searchParams.get('modo')==='visualizar';
+   return new Response(null,{status:302,headers:{Location:signR2('GET',key,600,{disposition:originalDisposition(filename,inline),cacheControl:'private, no-store'}),'Cache-Control':'private, no-store','Referrer-Policy':'no-referrer'}});
  }
  if(kind==='admin'){
   okAdmin(req);

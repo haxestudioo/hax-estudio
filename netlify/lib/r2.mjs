@@ -5,7 +5,7 @@ const sha=s=>createHash('sha256').update(s).digest('hex');
 const hmac=(key,text)=>createHmac('sha256',key).update(text).digest();
 const pct=x=>encodeURIComponent(x).replace(/[!'()*]/g,c=>'%'+c.charCodeAt(0).toString(16).toUpperCase());
 function credentials(){return {account:env('R2_ACCOUNT_ID')||'1ed24f2eb14f7cc0e4ccaf9ef859fd1e',bucket:env('R2_BUCKET')||'hax-fotos',access:required('R2_ACCESS_KEY_ID'),secret:required('R2_SECRET_ACCESS_KEY')};}
-export function signR2(method,key,expires=600){
+export function signR2(method,key,expires=600,responseHeaders={}){
  const {account,bucket,access,secret}=credentials();
  if(!['GET','PUT','HEAD'].includes(method)||!key||key.includes('..'))throw Error('Requisição de arquivo inválida.');
  const host=account+'.r2.cloudflarestorage.com';
@@ -19,7 +19,11 @@ export function signR2(method,key,expires=600){
  'X-Amz-Expires':String(expires),
  'X-Amz-SignedHeaders':'host'
  };
- const query=Object.entries(params).sort(([a],[b])=>a.localeCompare(b,'en')).map(([k,v])=>pct(k)+'='+pct(v)).join('&');
+ if(method==='GET'){
+  if(responseHeaders.disposition)params['response-content-disposition']=responseHeaders.disposition;
+  if(responseHeaders.cacheControl)params['response-cache-control']=responseHeaders.cacheControl;
+ }
+ const query=Object.entries(params).sort(([a],[b])=>a<b?-1:a>b?1:0).map(([k,v])=>pct(k)+'='+pct(v)).join('&');
  const canonical=[method,path,query,'host:'+host+'\n','host','UNSIGNED-PAYLOAD'].join('\n');
  const stringToSign=['AWS4-HMAC-SHA256',date,scope,sha(canonical)].join('\n');
  const kDay=hmac('AWS4'+secret,day),kRegion=hmac(kDay,'auto'),kService=hmac(kRegion,'s3'),kSigning=hmac(kService,'aws4_request');
