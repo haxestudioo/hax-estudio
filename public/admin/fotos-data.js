@@ -8,7 +8,7 @@ export async function loadRows(table){
  return all;
 }
 export function normalizePhone(value){const d=String(value||'').replace(/\D/g,'');return d.length===10||d.length===11?'55'+d:d;}
-export const dateKey=value=>value?new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(value)):'';
+export const dateKey=value=>{if(!value)return '';const parts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(value)).map(p=>[p.type,p.value]));return parts.year+'-'+parts.month+'-'+parts.day;};
 export function metrics(orders,items){
  const paid=orders.filter(o=>o.status==='approved'),pending=orders.filter(o=>o.status==='pending'),ids=new Set(paid.map(o=>o.id));
  const gross=paid.reduce((s,o)=>s+Number(o.total_cents),0);

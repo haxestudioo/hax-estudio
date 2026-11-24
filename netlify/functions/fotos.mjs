@@ -1,3 +1,4 @@
+import {deliveryToken,registerConsent,normalizePhone,whatsappConfigured} from '../lib/fotos-whatsapp.mjs';
 import {randomUUID,randomBytes,createHash,createHmac,timingSafeEqual} from 'node:crypto';
 import {signR2,headR2,readR2} from '../lib/r2.mjs';
 import {authenticated,sameOrigin,json,env} from '../lib/security.mjs';
@@ -27,7 +28,9 @@ async function authorizedOrder(req,id){
  const order=await single('hax_orders','?id=eq.'+q(id)+'&select=*');
  if(!order)throw err('Pedido não encontrado.',404);
  const token=access(req);
- if(token.length<32||!secureEqual(hash(token),order.access_hash))throw err('Acesso ao pedido não autorizado.',403);
+ const validOriginal=token.length>=32&&secureEqual(hash(token),order.access_hash);
+ const alternative=order.status==='approved'?deliveryToken(order.id):null;
+ if(!validOriginal&&!(alternative&&secureEqual(token,alternative)))throw err('Acesso ao pedido não autorizado.',403);
  return order;
 }
 function safeName(s,max=120){return String(s||'').replace(/[<>\r\n]/g,'').trim().slice(0,max);}
@@ -42,7 +45,7 @@ function paymentNotificationUrl(){
  return origin.replace(/\/$/,'')+'/api/fotos/webhook';
 }
 async function getPayment(id){
- const resp=await fetch('https://api.mercadopago.com/v1/payments/'+encodeURIComponent(id),{headers:{Authorization:'Bearer '+required('MP_ACCESS_TOKEN')}});
+ const resp=await fetch('https://api.mercadopago.com/v1/payments/'+encodeURIComponent(id),{headers:{Authorization:'Bearer '+required('MP_ACCESS_TOKEN')},signal:AbortSignal.timeout(7000)});
  if(!resp.ok)throw err('Não foi possível confirmar o pagamento no Mercado Pago.',502);
  return resp.json();
 }
@@ -68,6 +71,10 @@ function verifyWebhook(req,dataId){
  const manifest='id:'+String(dataId).toLowerCase()+';request-id:'+reqid+';ts:'+parts.ts+';';
  const expected=createHmac('sha256',required('MP_WEBHOOK_SECRET')).update(manifest).digest('hex');
  return secureEqual(parts.v1,expected);
+}
+export async function reconcileForWhatsApp(order){
+ if(!order.payment_id||order.status!=='pending')return order;
+ return syncPayment(order,await getPayment(order.payment_id));
 }
 async function checkOrderPayment(order){
  if(!order.payment_id)return order;
@@ -149,6 +156,10 @@ async function handler(req){
   }
   const qr=payment.point_of_interaction?.transaction_data||{};
   await change('hax_orders','?id=eq.'+q(orderId),{payment_id:String(payment.id),payment_status:payment.status||'pending',pix_code:qr.qr_code||null,pix_qr_base64:qr.qr_code_base64||null,expires_at:payment.date_of_expiration||null});
+  if(qr.qr_code&&(body.waReceipt===true||body.waReminder===true)){
+   try{await registerConsent({orderId,phone:normalizePhone(whatsapp),receipt:body.waReceipt===true,reminder:body.waReminder===true});}
+   catch{console.error('HAX WhatsApp: consentimento não registrado; checkout preservado.');}
+  }
   return json({orderId,token,total_cents:created.total_cents,pix_code:qr.qr_code||null,pix_qr_base64:qr.qr_code_base64||null,expires_at:payment.date_of_expiration||null});
  }
  if(kind==='order'&&req.method==='GET'){
@@ -199,6 +210,7 @@ async function handler(req){
    status.notes='A configuração CORS só é comprovada com upload no navegador. O Netlify não pode ser verificado apenas pelo status do GitHub.';
    return json(status);
   }
+  if(id==='whatsapp-status'&&req.method==='GET')return json({enabled:env('WA_ENABLED')==='true',configured:whatsappConfigured(),schedule:'*/5 * * * *'});
   if(id==='data'&&req.method==='GET'){
    const sets={
     events:['hax_events','id,title,slug,description,event_date,price_cents,published,cover_photo_id,created_at,updated_at','id.asc'],
