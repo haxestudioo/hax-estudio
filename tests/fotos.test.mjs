@@ -25,6 +25,7 @@ const state={
 };
 const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}});
 const originalFetch=globalThis.fetch;
+let previewReads=0,itemReads=0;
 globalThis.fetch=async (input,options={})=>{
  const url=new URL(input),path=url.pathname,method=options.method||'GET',body=options.body?JSON.parse(options.body):null;
  if(url.hostname==='example.supabase.co'){
@@ -38,7 +39,7 @@ globalThis.fetch=async (input,options={})=>{
    if(method==='PATCH'){Object.assign(state.event,body);return json([state.event]);}
    return json(url.searchParams.get('published')==='eq.true'&&!state.event.published?[]:[state.event]);
   }
-  if(path==='/rest/v1/hax_photos')return json([state.photo]);
+  if(path==='/rest/v1/hax_photos')return json(url.searchParams.get('status')==='eq.ready'&&state.photo.status!=='ready'?[]:[state.photo]);
   if(path==='/rest/v1/hax_customers'){
    if(method==='PATCH'){Object.assign(state.customer,body);return json([state.customer]);}
    return json([state.customer]);
@@ -47,9 +48,10 @@ globalThis.fetch=async (input,options={})=>{
    if(method==='PATCH'){Object.assign(state.order,body);return json([state.order]);}
    return json(state.order?[state.order]:[]);
   }
-  if(path==='/rest/v1/hax_order_items')return json(state.item&&(!url.searchParams.has('photo_id')||url.searchParams.get('photo_id')==='eq.'+state.item.photo_id)?[state.item]:[]);
+  if(path==='/rest/v1/hax_order_items'){itemReads++;return json(state.item&&(!url.searchParams.has('photo_id')||url.searchParams.get('photo_id')==='eq.'+state.item.photo_id)?[state.item]:[]);}
   throw Error('Rota Supabase não simulada: '+path);
  }
+ if(url.hostname.endsWith('.r2.cloudflarestorage.com')&&method==='GET'&&url.pathname.endsWith('/previas/a.webp')){previewReads++;return new Response('preview-only',{headers:{'Content-Type':'image/webp'}});}
  if(url.hostname.endsWith('.r2.cloudflarestorage.com') && method==='GET')return new Response('<Error><Code>NoSuchKey</Code><Message>The specified key does not exist.</Message></Error>',{status:404,headers:{'Content-Type':'application/xml'}});
  if(url.hostname==='api.mercadopago.com'){
   if(path==='/v1/payments'&&method==='POST'){state.lastPaymentPayload=body;if(state.mpCreateError)return json({error:'bad_request',message:'Collector user without key enabled for QR rendernull',cause:[{code:13253,description:'Error in Financial Identity Use Case'}]},400);return json({id:987654321,status:'pending',live_mode:true,external_reference:idOrder,payment_method_id:'pix',transaction_amount:10,point_of_interaction:{transaction_data:{qr_code:'PIXFAKE',qr_code_base64:'cGl4'}}});}
@@ -225,4 +227,49 @@ test('Mercado Pago 13253 explica falta de chave Pix e cancela pedido sem cobran�
   assert.equal(state.order.payment_status,'pix_key_unavailable');
   assert.equal(state.order.payment_id,undefined);
  }finally{state.mpCreateError=false;}
+});
+
+test('galeria e capas publicadas usam links R2 temporários, sem ler bytes no Netlify',async()=>{
+ state.event.published=true;state.event.cover_photo_id=idPhoto;state.photo.status='ready';const before=previewReads;
+ const response=await handler(req('/api/fotos/event/'+idEvent));assert.equal(response.status,200);const d=await response.json();
+ const photo=d.photos[0],url=new URL(photo.preview);assert.equal(url.hostname,process.env.R2_ACCOUNT_ID+'.r2.cloudflarestorage.com');assert.equal(url.pathname,'/hax-fotos/previas/a.webp');assert.ok(url.searchParams.has('X-Amz-Signature'));assert.equal(url.searchParams.get('X-Amz-Expires'),'900');assert.equal(url.searchParams.get('response-content-disposition'),'inline');assert.equal(photo.preview_fallback,'/api/fotos/preview/'+idPhoto);assert.ok(Date.parse(photo.preview_expires_at)>Date.now());assert.ok(!JSON.stringify(d).includes('originais/'));assert.ok(!JSON.stringify(d).includes('testsecretaccesskey'));
+ const events=await handler(req('/api/fotos/events'));assert.equal(events.status,200);const cover=(await events.json()).events[0];assert.match(cover.cover_preview,/r2.cloudflarestorage.com/);
+ const fallback=await handler(req(photo.preview_fallback));assert.equal(fallback.status,302);assert.match(fallback.headers.get('Location'),/\/previas\/a\.webp\?/);assert.equal(fallback.headers.get('Cache-Control'),'private, no-store');assert.equal(previewReads,before);
+});
+test('rascunhos e fotos ocultas não recebem URL assinada pública; admin mantém prévia privada',async()=>{
+ const {sessionToken}=await import('../netlify/lib/security.mjs');const headers={Cookie:'hax_session='+sessionToken()};
+ const route='/api/fotos/preview/'+idPhoto;
+ state.event.published=false;state.photo.status='ready';
+ try{
+  const draft=await handler(new Request(origin+'/api/fotos/event/'+idEvent,{headers}));assert.equal(draft.status,200);assert.equal((await draft.json()).photos[0].preview,route);
+  const denied=await handler(req(route));assert.equal(denied.status,404);
+  const privatePhoto=await handler(new Request(origin+route,{headers}));assert.equal(privatePhoto.status,200);assert.equal(privatePhoto.headers.get('Cache-Control'),'private, no-store');assert.equal(privatePhoto.headers.get('Vary'),'Cookie');
+  state.event.published=true;state.photo.status='hidden';
+  assert.equal((await handler(req(route))).status,404);
+  const hiddenGallery=await handler(req('/api/fotos/event/'+idEvent));assert.deepEqual((await hiddenGallery.json()).photos,[]);
+  const hidden=await handler(new Request(origin+route,{headers}));assert.equal(hidden.status,200);assert.equal(hidden.headers.get('Cache-Control'),'private, no-store');
+ }finally{state.event.published=true;state.photo.status='ready';}
+});
+test('flag de contingência restaura entrega por proxy sem mudar banco',async()=>{
+ process.env.HAX_DIRECT_PREVIEWS='false';
+ try{const route='/api/fotos/preview/'+idPhoto;const gallery=await handler(req('/api/fotos/event/'+idEvent));assert.equal((await gallery.json()).photos[0].preview,route);const proxied=await handler(req(route));assert.equal(proxied.status,200);assert.equal(await proxied.text(),'preview-only');}finally{delete process.env.HAX_DIRECT_PREVIEWS;}
+});
+test('URLs estáveis por janela e assinatura restrita ao caminho de prévia',async()=>{
+ const {previewLink,isPreviewKey}=await import('../netlify/lib/fotos-previews.mjs');
+ const now=Date.parse('2026-11-24T12:01:00Z');
+ const first=previewLink('previas/a.webp',now);assert.equal(first.url,previewLink('previas/a.webp',now+120000).url);
+ assert.notEqual(first.url,previewLink('previas/a.webp',now+300000).url);
+ assert.equal(previewLink('originais/a.jpg',now),null);assert.equal(isPreviewKey('previas/../originais/a.webp'),false);
+});
+test('consulta compacta de Pix não envia QR nem consulta itens enquanto pendente e entrega itens na aprovação',async()=>{
+ state.mpStatus='pending';state.mpLiveMode=true;
+ const created=await handler(req('/api/fotos/checkout',{method:'POST',body:{eventId:idEvent,photoIds:[idPhoto],name:'Cliente Teste',whatsapp:'44999999999',email:'cliente@example.com'}}));const data=await created.json();assert.equal(created.status,200);
+ const headers={'x-hax-order-token':data.token,'x-hax-status-only':'1'},url=origin+'/api/fotos/order/'+idOrder,before=itemReads;
+ const pending=await handler(new Request(url,{headers}));const body=await pending.json();assert.equal(body.status,'pending');assert.equal(body.pix_qr_base64,undefined);assert.equal(body.items,undefined);assert.equal(itemReads,before);
+ state.mpStatus='approved';const approved=await handler(new Request(url,{headers}));const paid=await approved.json();assert.equal(paid.status,'approved');assert.equal(paid.items.length,1);assert.ok(paid.items[0].original);assert.equal(itemReads,before+1);
+});
+test('consulta administrativa filtra pelo evento, não vaza chaves, exige login',async()=>{
+ const {sessionToken}=await import('../netlify/lib/security.mjs');const route='/api/fotos/admin/data?table=photos&event='+idEvent+'&offset=0';
+ assert.equal((await handler(req(route))).status,401);
+ const response=await handler(new Request(origin+route,{headers:{Cookie:'hax_session='+sessionToken()}}));assert.equal(response.status,200);const d=await response.json();assert.equal(d.rows.length,1);assert.match(d.rows[0].preview,/r2.cloudflarestorage.com/);assert.equal(d.rows[0].preview_key,undefined);
 });
