@@ -199,6 +199,29 @@ async function handler(req){
    status.notes='A configuração CORS só é comprovada com upload no navegador. O Netlify não pode ser verificado apenas pelo status do GitHub.';
    return json(status);
   }
+  if(id==='data'&&req.method==='GET'){
+   const sets={
+    events:['hax_events','id,title,slug,description,event_date,price_cents,published,cover_photo_id,created_at,updated_at','id.asc'],
+    photos:['hax_photos','id,event_id,filename,status,created_at','id.asc'],
+    orders:['hax_orders','id,customer_id,buyer_name,buyer_whatsapp,buyer_email,event_id,total_cents,status,payment_status,payment_id,paid_at,created_at,expires_at','id.asc'],
+    customers:['hax_customers','id,name,whatsapp,email,created_at,last_purchase_at','id.asc'],
+    items:['hax_order_items','order_id,photo_id,filename_snapshot,unit_price_cents','order_id.asc,photo_id.asc'],
+    messages:['hax_wa_jobs','order_id,receipt_state,reminder_state,receipt_sent_at,reminder_sent_at,created_at','order_id.asc']
+   };
+   const set=sets[u.searchParams.get('table')];const offset=Number(u.searchParams.get('offset')||0);
+   if(!Array.isArray(set)||!Number.isSafeInteger(offset)||offset<0)throw err('Consulta inválida.');
+   const rows=await list(set[0],'?select='+set[1]+'&order='+set[2]+'&limit=200&offset='+offset);
+   return json({rows,next:rows.length===200?offset+200:null});
+  }
+  if(id==='customer'&&req.method==='POST'){
+   checkOrigin(req);const b=await req.json(),name=safeName(b.name,100),email=String(b.email||'').trim().toLowerCase();
+   const digits=String(b.whatsapp||'').replace(/\D/g,'');const phone=(digits.length===10||digits.length===11)?'55'+digits:digits;
+   if(name.length<3||!/^55\d{10,11}$/.test(phone)||!email||email.length>160||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw err('Informe nome, WhatsApp brasileiro com DDD e e-mail válidos.');
+   const existing=await list('hax_customers','?whatsapp=in.('+q(phone)+','+q(phone.slice(2))+')&select=id&limit=1');
+   if(existing.length)throw err('Já existe um cliente com este WhatsApp.',409);
+   const rows=await db('hax_customers',{method:'POST',body:{name,whatsapp:phone,email},headers:{Prefer:'return=representation'}});
+   return json({customer:rows[0]});
+  }
   if(id==='dashboard'&&req.method==='GET'){
    const [events,photos,orders,customers,items]=await Promise.all([
     list('hax_events','?select=*&order=created_at.desc&limit=100'),
