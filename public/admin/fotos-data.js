@@ -2,9 +2,9 @@ export async function shopApi(path,method='GET',body){
  const r=await fetch('/api/fotos/admin/'+path,{method,headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,credentials:'same-origin',cache:'no-store'});
  const d=await r.json();if(!r.ok)throw Error(d.error||'Falha ao consultar a loja');return d;
 }
-export async function loadRows(table){
+export async function loadRows(table,{event}={}){
  const all=[];let offset=0;
- do{const d=await shopApi('data?table='+encodeURIComponent(table)+'&offset='+offset);all.push(...d.rows);offset=d.next;}while(offset!==null);
+ do{const d=await shopApi('data?table='+encodeURIComponent(table)+'&offset='+offset+(event?'&event='+encodeURIComponent(event):''));all.push(...d.rows);offset=d.next;}while(offset!==null);
  return all;
 }
 export function normalizePhone(value){const d=String(value||'').replace(/\D/g,'');return d.length===10||d.length===11?'55'+d:d;}

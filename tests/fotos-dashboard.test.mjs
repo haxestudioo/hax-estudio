@@ -9,3 +9,9 @@ test('abas vendas e CRM exibem dados separados com histórico e filtros',async()
  globalThis.fetch=async u=>{const url=new URL(u,'https://example.org');return Response.json({rows:sets[url.searchParams.get('table')]||[],next:null});};
  try{await mount(panel,'sales');assert.match(panel.textContent,/Receita bruta aprovada/);assert.match(panel.textContent,/foto.jpg/);assert.match(panel.textContent,/Horário das aprovações/);assert.equal(panel.querySelector('#hs-create'),null);panel.querySelector('#hs-status').value='pending';panel.querySelector('#hs-apply').click();assert.equal(panel.querySelectorAll('tbody tr').length,0);await mount(panel,'crm');assert.match(panel.textContent,/Ana Teste/);assert.match(panel.textContent,/Clientes únicos/);assert.ok(panel.querySelector('#hs-create'));assert.match(panel.textContent,/foto.jpg/);}finally{globalThis.fetch=prev;dom.window.close();}
 });
+
+test('consulta paginada de fotos administrativas usa o filtro por evento',async()=>{
+ const {loadRows}=await import('../public/admin/fotos-data.js');const prev=globalThis.fetch;let calls=0;
+ globalThis.fetch=async url=>{calls++;const p=new URL(url,'https://example.org');assert.equal(p.searchParams.get('table'),'photos');assert.equal(p.searchParams.get('event'),'evento-selecionado');assert.equal(p.searchParams.get('offset'),calls===1?'0':'200');return Response.json({rows:[{id:'p'+calls}],next:calls===1?200:null});};
+ try{assert.equal((await loadRows('photos',{event:'evento-selecionado'})).length,2);assert.equal(calls,2);}finally{globalThis.fetch=prev;}
+});

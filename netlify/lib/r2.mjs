@@ -5,12 +5,12 @@ const sha=s=>createHash('sha256').update(s).digest('hex');
 const hmac=(key,text)=>createHmac('sha256',key).update(text).digest();
 const pct=x=>encodeURIComponent(x).replace(/[!'()*]/g,c=>'%'+c.charCodeAt(0).toString(16).toUpperCase());
 function credentials(){return {account:env('R2_ACCOUNT_ID')||'1ed24f2eb14f7cc0e4ccaf9ef859fd1e',bucket:env('R2_BUCKET')||'hax-fotos',access:required('R2_ACCESS_KEY_ID'),secret:required('R2_SECRET_ACCESS_KEY')};}
-export function signR2(method,key,expires=600,responseHeaders={}){
+export function signR2(method,key,expires=600,responseHeaders={},issuedAt=new Date()){
  const {account,bucket,access,secret}=credentials();
  if(!['GET','PUT','HEAD'].includes(method)||!key||key.includes('..'))throw Error('Requisição de arquivo inválida.');
  const host=account+'.r2.cloudflarestorage.com';
  const path='/'+[bucket,...key.split('/')].map(pct).join('/');
- const now=new Date(),date=now.toISOString().replace(/[:-]|\.\d{3}/g,'').slice(0,15)+'Z',day=date.slice(0,8);
+ const now=issuedAt,date=now.toISOString().replace(/[:-]|\.\d{3}/g,'').slice(0,15)+'Z',day=date.slice(0,8);
  const scope=day+'/auto/s3/aws4_request';
  const params={
  'X-Amz-Algorithm':'AWS4-HMAC-SHA256',
